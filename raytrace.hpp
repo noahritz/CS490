@@ -35,10 +35,20 @@ public:
 
 };
 
+class Light {
+public:
+
+    glm::vec3 position;
+    glm::vec3 color;
+
+    Light(glm::vec3 p, glm::vec3 c);
+
+};
+
 
 void render(Uint32 *buffer);
 
-glm::vec3 trace(Ray r, glm::vec3 sphere, int depth);
+glm::vec3 trace(const Ray &r, int depth);
 
 
 #include "raytrace.cpp"

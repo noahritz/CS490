@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include <SDL2/SDL.h>
+#include <glm/vec3.hpp>
+#include "raytrace.hpp"
 
 const int WIDTH = 640, HEIGHT = 480;
 
@@ -21,19 +23,13 @@ int main(int argc, char *argv[]) {
 
     SDL_SetWindowTitle(window, "Game");
 
-    // Create texture to draw pixels to
+    // Texture to draw pixels to
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 
-    // Create a pixel buffer
+    // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
 
-    for (int x = 0; x < WIDTH; x++) {
-        for (int y = 0; y < HEIGHT; y++) {
-            if ((x + y) % 10 == 0) {
-                pixels[y*WIDTH + x] = 0xFF2DF5A9;
-            }
-        }
-    }
+    render(pixels);
 
     SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32));
 
