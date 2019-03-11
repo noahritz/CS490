@@ -4,6 +4,7 @@
 #include "raytrace.hpp"
 #include "geometry.hpp"
 #include <iostream>
+#include <chrono>
 
 using glm::vec3;
 
@@ -16,20 +17,18 @@ Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v} {};
 
 /* CAMERA CLASS */
 // Default constructor for Camera
-Camera::Camera() : origin{0.0, 0.0, 0.0}, dir{0.0, 0.0, -1.0} {
-    setView(1, 1, 0.0);
+Camera::Camera() : WIDTH(640), HEIGHT(480), origin{0.0, 0.0, 0.0}, dir{0.0, 0.0, -1.0} {
+    setView(30.0);
 }
 
-Camera::Camera(int w, int h, float FOV) : origin{0.0, 0.0, 0.0}, dir{0.0, 0.0, -1.0} {
-    setView(w, h, FOV);
+Camera::Camera(int w, int h, float FOV) : WIDTH(w), HEIGHT(h), origin{0.0, 0.0, 0.0}, dir{0.0, 0.0, -1.0} {
+    setView(FOV);
 }
 
 // Set the field of view
-void Camera::setView(int w, int h, float FOV) {
-    width = w;
-    height = h;
-    aspectRatio = (float) height / (float) width;
+void Camera::setView(float FOV) {
     fov = FOV;
+    aspectRatio = (float) WIDTH / (float) HEIGHT;
 }
 
 /* LIGHT CLASS */
@@ -39,7 +38,7 @@ Uint32 vecToHex(glm::vec3 v) { // maybe inline this?
     return (((Uint32) (v.r * 255.0)) << 16) + (((Uint32) (v.g * 255.0)) << 8) + ((Uint32) (v.b * 255.0));
 }
 
-void render(Uint32 *buffer) {
+void render(Uint32 *buffer, int width, int height) {
 
     // Red sphere
     vec3 sphere{0.0, 0.0, -10.0};  
@@ -47,7 +46,7 @@ void render(Uint32 *buffer) {
     float sphere_rad = 1.0;
 
     // Create a camera facing forward
-    Camera camera{640, 480, 40.0};
+    Camera camera{width, height, 40.0};
     float fovRadians = glm::tan(camera.fov / 2 * (M_PI / 180)); // A misnomer, but whatever
 
     // Light
@@ -56,8 +55,10 @@ void render(Uint32 *buffer) {
 
     Ray ray;
     
-    for (int x = 0; x < 640; x++) {
-        for (int y = 0; y < 480; y++) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int x = 0; x < camera.WIDTH; x++) {
+        for (int y = 0; y < camera.HEIGHT; y++) {
             
             // Start with a black pixel
             vec3 color{0.0, 0.0, 0.0};
@@ -65,16 +66,20 @@ void render(Uint32 *buffer) {
             // Create ray
             ray.origin = camera.origin;
 
-            float px = (2 * ((x + 0.5) / camera.width) - 1) * fovRadians * camera.aspectRatio;
-            float py = (1 - 2 * ((y + 0.5) / camera.height)) * fovRadians;
+            float px = (2 * ((x + 0.5) / camera.WIDTH) - 1) * fovRadians * camera.aspectRatio;
+            float py = (1 - 2 * ((y + 0.5) / camera.HEIGHT)) * fovRadians;
             ray.vector = glm::normalize(vec3{px, py, -1});
 
             // Check for collisions with the scene
             color += trace(ray, 0);
 
-            buffer[y*camera.width + x] = vecToHex(color);
+            buffer[y*camera.WIDTH + x] = vecToHex(color);
         }
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+    std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
 }
 
 vec3 trace(const Ray &r, int depth) {
@@ -83,7 +88,7 @@ vec3 trace(const Ray &r, int depth) {
     s1.color = vec3{1.0, 0.0, 0.0};
 
     // Light source
-    Light light{vec3{2.0, 2.0, -8.0}, vec3{0.0, 0.0, 1.0}};
+    Light light{vec3{2.0, 0.0, -8.0}, vec3{1.0, 1.0, 1.0}};
 
     // Intersect sphere
     float t;

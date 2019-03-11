@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
 
-    render(pixels);
+    render(pixels, WIDTH, HEIGHT);
 
     SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32));
 

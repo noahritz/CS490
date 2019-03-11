@@ -20,8 +20,8 @@ class Camera {
 public:
 
     float fov;
-    int width;
-    int height;
+    const int WIDTH;
+    const int HEIGHT;
     float aspectRatio;
     glm::vec3 origin;
     glm::vec3 dir;
@@ -30,7 +30,7 @@ public:
     Camera();
     Camera(int w, int h, float FOV);
 
-    void setView(int w, int h, float FOV);
+    void setView(float FOV);
     void setFOV(float FOV);
 
 };
@@ -46,7 +46,7 @@ public:
 };
 
 
-void render(Uint32 *buffer);
+void render(Uint32 *buffer, int width, int height);
 
 glm::vec3 trace(const Ray &r, int depth);
 

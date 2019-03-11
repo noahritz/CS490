@@ -60,7 +60,7 @@ glm::vec3 Sphere::surface(const glm::vec3& point, const Light& light) const {
     float contribution = glm::dot(glm::normalize(light.position - point), normal(point));
     if (contribution > 0) {
         color += (light.color * contribution);
-        //color *= this->color; // Doesn't work, how do I factor in sphere color?
+        color *= this->color;
     }
 
     return color;
