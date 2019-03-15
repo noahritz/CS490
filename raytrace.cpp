@@ -1,12 +1,17 @@
+#include <iostream>
+#include <vector>
+#include <chrono>
+
 #include <glm/vec3.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/geometric.hpp>
+#include "rapidjson/document.h"
+
 #include "raytrace.hpp"
 #include "geometry.hpp"
-#include <iostream>
-#include <chrono>
 
 using glm::vec3;
+using std::vector;
 
 /* RAY CLASS */
 // Default Ray constructor
@@ -38,7 +43,7 @@ Uint32 vecToHex(glm::vec3 v) { // maybe inline this?
     return (((Uint32) (v.r * 255.0)) << 16) + (((Uint32) (v.g * 255.0)) << 8) + ((Uint32) (v.b * 255.0));
 }
 
-void render(Uint32 *buffer, int width, int height) {
+void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
 
     // Red sphere
     vec3 sphere{0.0, 0.0, -10.0};  
@@ -52,6 +57,18 @@ void render(Uint32 *buffer, int width, int height) {
     // Light
     vec3 light{3.0, 3.0, -8.0};
     vec3 light_color{1.0, 1.0, 1.0};
+
+    // Get scene from json document
+    int num_objects = scene["objects"]["spheres"].Size();
+
+    vector<Shape*> objects{num_objects};
+    int i = 0;
+    for (auto &s : scene["objects"]["spheres"].GetArray()) {
+        Sphere *sph = new Sphere{   vec3{s["x"].GetFloat(), s["y"].GetFloat(), s["z"].GetFloat()},
+                                    vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
+                                    s["radius"].GetFloat()};
+        objects[i++] = sph;
+    }
 
     Ray ray;
     
@@ -71,7 +88,7 @@ void render(Uint32 *buffer, int width, int height) {
             ray.vector = glm::normalize(vec3{px, py, -1});
 
             // Check for collisions with the scene
-            color += trace(ray, 0);
+            color += trace(ray, 0, objects);
 
             buffer[y*camera.WIDTH + x] = vecToHex(color);
         }
@@ -82,22 +99,34 @@ void render(Uint32 *buffer, int width, int height) {
     std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
 }
 
-vec3 trace(const Ray &r, int depth) {
+vec3 trace(const Ray &r, int depth, vector<Shape*> objects) {
     // Create a sphere
     Sphere s1{vec3{0.0, 0.0, -10.0}, 1.0};
     s1.color = vec3{1.0, 0.0, 0.0};
 
     // Light source
-    Light light{vec3{2.0, 0.0, -8.0}, vec3{1.0, 1.0, 1.0}};
+    Light light{vec3{0.0, 0.0, -8.0}, vec3{1.0, 1.0, 1.0}};
 
-    // Intersect sphere
-    float t;
-    if (s1.intersect(r, t)) {
-        glm::vec3 pHit = r.origin + (r.vector * t);
+    // Intersect object(s)
+    float t = 10000.0;
+    float t_test;
+    bool hit = false;
+    Shape *hit_object;
 
-        // get surface details of intersection
-        return s1.surface(pHit, light);
+    for (Shape *o : objects) {
+        if (o->intersect(r, t_test) && t_test < t) {
+            t = t_test;
+            hit = true;
+            hit_object = o;
+        }
     }
 
+    if (hit) {
+        // get surface details of intersection
+        glm::vec3 pHit = r.origin + (r.vector * t);
+        return hit_object->surface(pHit, light);
+    }
+
+    // Hit nothing, return black
     return vec3{0.0, 0.0, 0.0};
 }

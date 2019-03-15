@@ -1,9 +1,13 @@
-#include "geometry.hpp"
 #include <glm/geometric.hpp>
 #include <glm/exponential.hpp>
 #include <algorithm>
+#include "geometry.hpp"
 
-Sphere::Sphere(glm::vec3 c, float r) : center{c}, radius{r} {}
+// Constructor for a white sphere
+Sphere::Sphere(glm::vec3 ctr, float r) : center{ctr}, radius{r} {}
+
+// Constructor for a sphere of specified color
+Sphere::Sphere(glm::vec3 ctr, glm::vec3 col, float r) : center{ctr}, color{col}, radius{r} {}
 
 // from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
 bool Sphere::solveQuadratic (const float &a, const float &b, const float &c, float &x0, float &x1) const {

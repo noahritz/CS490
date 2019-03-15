@@ -1,8 +1,12 @@
 #ifndef __raytrace_HPP__
 #define __raytrace_HPP__
 
+#include <vector>
 #include <SDL2/SDL.h>
 #include <glm/vec3.hpp>
+#include "rapidjson/document.h"
+
+class Shape;
 
 class Ray {
 public:
@@ -46,9 +50,9 @@ public:
 };
 
 
-void render(Uint32 *buffer, int width, int height);
+void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
-glm::vec3 trace(const Ray &r, int depth);
+glm::vec3 trace(const Ray &r, int depth, std::vector<Shape*> objects);
 
 
 #include "raytrace.cpp"

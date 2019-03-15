@@ -1,7 +1,11 @@
 #include <iostream>
+#include <fstream>
+#include <assert.h>
 
 #include <SDL2/SDL.h>
 #include <glm/vec3.hpp>
+#include "rapidjson/document.h"
+
 #include "raytrace.hpp"
 
 const int WIDTH = 640, HEIGHT = 480;
@@ -26,10 +30,33 @@ int main(int argc, char *argv[]) {
     // Texture to draw pixels to
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 
+    // Read scene file from json
+    int file_length = 0;
+    char *buff;
+    std::ifstream f("scene.json", std::ifstream::binary | std::ios::ate); // Read file from end
+
+    if (!f) {
+        std::cout << "Failed to read scene.json" << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return EXIT_SUCCESS;
+    }
+
+    file_length = f.tellg();
+    buff = new char[file_length];
+    f.seekg(0, f.beg);
+    f.read(buff, file_length);
+    std::cout << "Reading scene.json with length " << file_length << std::endl;
+
+    rapidjson::Document d;
+    d.Parse(buff);
+    // std::cout << buff << std::endl;
+    assert(d.IsObject());
+
     // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
 
-    render(pixels, WIDTH, HEIGHT);
+    render(pixels, WIDTH, HEIGHT, d);
 
     SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32));
 

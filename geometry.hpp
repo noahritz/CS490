@@ -1,8 +1,8 @@
 #ifndef __GEOMETRY_HPP__
 #define __GEOMETRY_HPP__
 
-#include "raytrace.hpp"
 #include <glm/vec3.hpp>
+#include "raytrace.hpp"
 
 class Shape {
 public:
@@ -20,7 +20,8 @@ public:
     float radius;
     glm::vec3 color;
 
-    Sphere(glm::vec3 c, float r);
+    Sphere(glm::vec3 ctr, float r);
+    Sphere(glm::vec3 ctr, glm::vec3 col, float r);
 
     bool intersect(const Ray& ray, float &t) const;
     glm::vec3 surface(const glm::vec3& point, const Light& light) const;
