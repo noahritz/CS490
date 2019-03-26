@@ -43,14 +43,14 @@ int main(int argc, char *argv[]) {
     }
 
     file_length = f.tellg();
-    buff = new char[file_length];
+    buff = new char[file_length + 1];
     f.seekg(0, f.beg);
     f.read(buff, file_length);
+    buff[file_length] = '\0';
     std::cout << "Reading scene.json with length " << file_length << std::endl;
 
     rapidjson::Document d;
     d.Parse(buff);
-    // std::cout << buff << std::endl;
     assert(d.IsObject());
 
     // Pixel buffer
@@ -64,6 +64,9 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+
+    delete[] pixels;
+    delete[] buff;
 
     SDL_Event windowEvent;
 

@@ -36,6 +36,12 @@ void Camera::setView(float FOV) {
     aspectRatio = (float) WIDTH / (float) HEIGHT;
 }
 
+// Move Camera
+void Camera::move(const vec3 pos, const vec3 point) {
+    origin = pos;
+    dir = point;
+}
+
 /* LIGHT CLASS */
 Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 
@@ -53,14 +59,14 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     // Create a camera facing forward
     Camera camera{width, height, 40.0};
     float fovRadians = glm::tan(camera.fov / 2 * (M_PI / 180)); // A misnomer, but whatever
+    camera.move(/*TODO*/);
 
     // Light
     vec3 light{3.0, 3.0, -8.0};
     vec3 light_color{1.0, 1.0, 1.0};
 
-    // Get scene from json document
+    // Get scene objects from json document
     int num_objects = scene["objects"]["spheres"].Size();
-
     vector<Shape*> objects{num_objects};
     int i = 0;
     for (auto &s : scene["objects"]["spheres"].GetArray()) {
@@ -68,6 +74,16 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
                                     vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
                                     s["radius"].GetFloat()};
         objects[i++] = sph;
+    }
+
+    // Get scene lights from json document
+    int num_lights = scene["lights"].Size();
+    vector<Light*> lights{num_lights};
+    i = 0;
+    for (auto &l : scene["lights"].GetArray()) {
+        Light *lgt = new Light{ vec3{l["x"].GetFloat(), l["y"].GetFloat(), l["z"].GetFloat()},
+                                vec3{l["r"].GetFloat(), l["g"].GetFloat(), l["b"].GetFloat()}};
+        lights[i++] = lgt;
     }
 
     Ray ray;
@@ -88,7 +104,7 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
             ray.vector = glm::normalize(vec3{px, py, -1});
 
             // Check for collisions with the scene
-            color += trace(ray, 0, objects);
+            color += trace(ray, 0, objects, lights);
 
             buffer[y*camera.WIDTH + x] = vecToHex(color);
         }
@@ -99,7 +115,7 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
 }
 
-vec3 trace(const Ray &r, int depth, vector<Shape*> objects) {
+vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<Light*> lights) {
     // Create a sphere
     Sphere s1{vec3{0.0, 0.0, -10.0}, 1.0};
     s1.color = vec3{1.0, 0.0, 0.0};
@@ -124,7 +140,7 @@ vec3 trace(const Ray &r, int depth, vector<Shape*> objects) {
     if (hit) {
         // get surface details of intersection
         glm::vec3 pHit = r.origin + (r.vector * t);
-        return hit_object->surface(pHit, light);
+        return hit_object->surface(pHit, *lights[0]);
     }
 
     // Hit nothing, return black

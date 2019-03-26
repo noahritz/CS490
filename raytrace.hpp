@@ -35,7 +35,7 @@ public:
     Camera(int w, int h, float FOV);
 
     void setView(float FOV);
-    void setFOV(float FOV);
+    void move(const glm::vec3 pos, const glm::vec3 point);
 
 };
 
@@ -52,7 +52,7 @@ public:
 
 void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
-glm::vec3 trace(const Ray &r, int depth, std::vector<Shape*> objects);
+glm::vec3 trace(const Ray &r, int depth, const std::vector<Shape*> objects, const std::vector<Light*> lights);
 
 
 #include "raytrace.cpp"

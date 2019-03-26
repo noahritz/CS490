@@ -1,4 +1,4 @@
 # Ignore executables
-!*.exe
+*.exe
 # Ignore VSCode settings
 .vscode
