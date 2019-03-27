@@ -45,6 +45,18 @@ void Camera::move(const vec3 pos, const vec3 point) {
 /* LIGHT CLASS */
 Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 
+bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) const {
+    Ray light_ray = Ray{point, glm::normalize(position - point)};
+    float _t;
+    for (auto &o : objects) {
+        if (o->intersect(light_ray, _t)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 Uint32 vecToHex(glm::vec3 v) { // maybe inline this?
     return (((Uint32) (v.r * 255.0)) << 16) + (((Uint32) (v.g * 255.0)) << 8) + ((Uint32) (v.b * 255.0));
 }
@@ -59,7 +71,11 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     // Create a camera facing forward
     Camera camera{width, height, 40.0};
     float fovRadians = glm::tan(camera.fov / 2 * (M_PI / 180)); // A misnomer, but whatever
-    // camera.move(/*TODO*/);
+
+    // Move camera
+    vec3 cameraPos{scene["camera"]["x"].GetFloat(), scene["camera"]["y"].GetFloat(), scene["camera"]["z"].GetFloat()};
+    vec3 cameraPoint{scene["camera"]["toX"].GetFloat(), scene["camera"]["toY"].GetFloat(), scene["camera"]["toZ"].GetFloat()};
+    camera.move(cameraPos, cameraPoint);
 
     // Light
     vec3 light{3.0, 3.0, -8.0};
@@ -99,7 +115,10 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
 
     Ray ray;
     
+    const int AA = scene["AA"].GetInt(); // Anti-Aliasing
+
     auto start = std::chrono::high_resolution_clock::now();
+    auto recent = start;
 
     for (int x = 0; x < camera.WIDTH; x++) {
         for (int y = 0; y < camera.HEIGHT; y++) {
@@ -107,17 +126,32 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
             // Start with a black pixel
             vec3 color{0.0, 0.0, 0.0};
 
-            // Create ray
-            ray.origin = camera.origin;
+            for (int xx = 1; xx <= AA; xx++) {
+                for (int yy = 1; yy <= AA; yy++) {
 
-            float px = (2 * ((x + 0.5) / camera.WIDTH) - 1) * fovRadians * camera.aspectRatio;
-            float py = (1 - 2 * ((y + 0.5) / camera.HEIGHT)) * fovRadians;
-            ray.vector = glm::normalize(vec3{px, py, -1});
+                    // Create ray
+                    ray.origin = camera.origin;
 
-            // Check for collisions with the scene
-            color += trace(ray, 0, objects, lights);
+                    float px = (2 * ((x + ( (float) xx / (float) (AA + 1)) ) / camera.WIDTH) - 1) * fovRadians * camera.aspectRatio;
+                    float py = (1 - 2 * ((y + ( (float) yy / (float) (AA + 1)) ) / camera.HEIGHT)) * fovRadians;
+                    ray.vector = glm::normalize(vec3{px, py, -1});
 
-            buffer[y*camera.WIDTH + x] = vecToHex(color);
+                    // Check for collisions with the scene
+                    color += trace(ray, 0, objects, lights);
+
+                }
+            }
+
+            buffer[y*camera.WIDTH + x] = vecToHex(color / (float) (AA*AA) );
+
+            // Check for events to prevent the window from not responding
+            if (y == 0) {
+                auto check = std::chrono::high_resolution_clock::now();
+                if (std::chrono::duration_cast<std::chrono::microseconds>(check - recent).count() > 1000000) {
+                    SDL_PumpEvents();
+                    recent = check;
+                }
+            }
         }
     }
 
@@ -126,7 +160,7 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
 }
 
-vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<Light*> lights) {
+vec3 trace(const Ray &r, int depth, const vector<Shape*>& objects, const vector<Light*>& lights) {
 
     // Intersect object(s)
     float t = 10000.0;
@@ -136,7 +170,6 @@ vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<L
 
     for (Shape *o : objects) {
         if (o->intersect(r, t_test) && t_test < t) {
-            // std::cout << "intersected" << std::endl;
             t = t_test;
             hit = true;
             hit_object = o;
@@ -146,7 +179,7 @@ vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<L
     if (hit) {
         // get surface details of intersection
         glm::vec3 pHit = r.origin + (r.vector * t);
-        return hit_object->surface(pHit, *lights[0]);
+        return hit_object->surface(pHit, objects, lights);
     }
 
     // Hit nothing, return black

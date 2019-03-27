@@ -1,5 +1,6 @@
 #include <glm/geometric.hpp>
 #include <glm/exponential.hpp>
+#include <vector>
 #include <algorithm>
 #include "geometry.hpp"
 
@@ -8,14 +9,24 @@
 Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}) {}
 Shape::Shape(glm::vec3 col) : color(col) {}
 
-glm::vec3 Shape::surface(const glm::vec3& point, const Light& light) const {
+glm::vec3 Shape::surface(const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
     glm::vec3 _color{0.0, 0.0, 0.0};
 
-    float contribution = glm::dot(glm::normalize(light.position - point), normal(point));
-    if (contribution > 0) {
-        _color += (light.color * contribution);
-        _color *= this->color;
+    for (auto &l : lights) {
+
+        glm::vec3 norm = this->normal(point);
+        if (l->visible(point + (norm * 0.0001f), objects)) {
+            float contribution = glm::dot(glm::normalize(l->position - point), norm);
+            if (contribution > 0) {
+                _color += (l->color * contribution);
+            }
+        }
     }
+
+    _color.x = std::min(_color.x, 1.0f);
+    _color.y = std::min(_color.y, 1.0f);
+    _color.z = std::min(_color.z, 1.0f);
+    _color *= this->color; // scale it by the object's color
 
     return _color;
 }
@@ -75,7 +86,6 @@ bool Sphere::intersect(const Ray &ray, float &t) const {
 
     t = t0;
 
-    // std::cout << "sphere hit" << std::endl;
     return true;
 }
 
@@ -101,7 +111,6 @@ bool Triangle::intersect(const Ray& ray, float &t) const {
     
     // Disregard triangle if triangle is backfacing
     if (det < 0.0000001) {
-        // std::cout << "tri miss BACK " << det << std::endl;
         return false;
     }
 
@@ -110,20 +119,17 @@ bool Triangle::intersect(const Ray& ray, float &t) const {
     glm::vec3 cramer_t = ray.origin - v0;
     float u = glm::dot(cramer_t, cramer_p) * inv_det;
     if (u < 0 || u > 1) {
-        // std::cout << "tri miss U" << std::endl;
         return false;
     }
 
     glm::vec3 cramer_q = glm::cross(cramer_t, AB);
     float v = glm::dot(ray.vector, cramer_q) * inv_det;
     if (v < 0 || (u + v) > 1) {
-        // std::cout << "tri miss V" << std::endl;
         return false;
     }
 
     t = glm::dot(AC, cramer_q) * inv_det;
 
-    // std::cout << "tri hit " << t << ' ' << u << ' ' << v << std::endl;
     return true;
 }
 
@@ -132,5 +138,5 @@ glm::vec3 Triangle::normal(const glm::vec3& point) const {
     glm::vec3 a = v1 - v0;
     glm::vec3 b = v2 - v0;
 
-    return glm::cross(a, b);
+    return glm::normalize(glm::cross(a, b));
 }

@@ -47,12 +47,14 @@ public:
 
     Light(glm::vec3 p, glm::vec3 c);
 
+    bool visible(const glm::vec3& point, const std::vector<Shape*>& objects) const;
+
 };
 
 
 void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
-glm::vec3 trace(const Ray &r, int depth, const std::vector<Shape*> objects, const std::vector<Light*> lights);
+glm::vec3 trace(const Ray &r, int depth, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
 
 
 #include "raytrace.cpp"

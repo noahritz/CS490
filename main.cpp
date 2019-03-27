@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     // Create Window and Renderer
     SDL_Window *window;
     SDL_Renderer *renderer;
-    SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer);
+    SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FOREIGN, &window, &renderer);
 
     if (window == NULL || renderer == NULL) {
         std::cout << "Could not create window and/or renderer: " << SDL_GetError() << std::endl;
@@ -58,11 +58,15 @@ int main(int argc, char *argv[]) {
 
     render(pixels, WIDTH, HEIGHT, d);
 
-    SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32));
+    if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
+        std::cout << "ERROR: " << SDL_GetError() << std::endl;
+    }
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
+        std::cout << "ERROR: " << SDL_GetError() << std::endl;
+    }
     SDL_RenderPresent(renderer);
 
     delete[] pixels;

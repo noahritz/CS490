@@ -1,6 +1,7 @@
 #ifndef __GEOMETRY_HPP__
 #define __GEOMETRY_HPP__
 
+#include <vector>
 #include <glm/vec3.hpp>
 #include "raytrace.hpp"
 
@@ -13,7 +14,7 @@ public:
     Shape(glm::vec3 color);
 
     virtual bool intersect(const Ray& ray, float &t) const = 0;
-    glm::vec3 surface(const glm::vec3& point, const Light& light) const;
+    glm::vec3 surface(const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const;
     virtual glm::vec3 normal(const glm::vec3& point) const = 0;
 
 };
