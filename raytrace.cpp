@@ -59,21 +59,32 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     // Create a camera facing forward
     Camera camera{width, height, 40.0};
     float fovRadians = glm::tan(camera.fov / 2 * (M_PI / 180)); // A misnomer, but whatever
-    camera.move(/*TODO*/);
+    // camera.move(/*TODO*/);
 
     // Light
     vec3 light{3.0, 3.0, -8.0};
     vec3 light_color{1.0, 1.0, 1.0};
 
-    // Get scene objects from json document
-    int num_objects = scene["objects"]["spheres"].Size();
+    // Create vector of scene objects
+    int num_objects = scene["objects"]["spheres"].Size() + scene["objects"]["triangles"].Size();
     vector<Shape*> objects{num_objects};
+
+    // Get sphere objects from json document
     int i = 0;
     for (auto &s : scene["objects"]["spheres"].GetArray()) {
         Sphere *sph = new Sphere{   vec3{s["x"].GetFloat(), s["y"].GetFloat(), s["z"].GetFloat()},
                                     vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
                                     s["radius"].GetFloat()};
         objects[i++] = sph;
+    }
+
+    // Get triangle objects from json document
+    for (auto &t : scene["objects"]["triangles"].GetArray()) {
+        Triangle *tri = new Triangle{   vec3{t["v1"]["x"].GetFloat(), t["v1"]["y"].GetFloat(), t["v1"]["z"].GetFloat()},
+                                        vec3{t["v2"]["x"].GetFloat(), t["v2"]["y"].GetFloat(), t["v2"]["z"].GetFloat()},
+                                        vec3{t["v3"]["x"].GetFloat(), t["v3"]["y"].GetFloat(), t["v3"]["z"].GetFloat()},
+                                        vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()}};
+        objects[i++] = tri;
     }
 
     // Get scene lights from json document
@@ -116,12 +127,6 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
 }
 
 vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<Light*> lights) {
-    // Create a sphere
-    Sphere s1{vec3{0.0, 0.0, -10.0}, 1.0};
-    s1.color = vec3{1.0, 0.0, 0.0};
-
-    // Light source
-    Light light{vec3{0.0, 0.0, -8.0}, vec3{1.0, 1.0, 1.0}};
 
     // Intersect object(s)
     float t = 10000.0;
@@ -131,6 +136,7 @@ vec3 trace(const Ray &r, int depth, const vector<Shape*> objects, const vector<L
 
     for (Shape *o : objects) {
         if (o->intersect(r, t_test) && t_test < t) {
+            // std::cout << "intersected" << std::endl;
             t = t_test;
             hit = true;
             hit_object = o;
