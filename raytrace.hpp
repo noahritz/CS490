@@ -7,6 +7,7 @@
 #include "rapidjson/document.h"
 
 class Shape;
+class Intersection;
 
 class Ray {
 public:
@@ -17,7 +18,19 @@ public:
 
     glm::vec3 origin;
     glm::vec3 vector;
+    int depth;
 
+    Intersection intersectScene(const std::vector<Shape*>& objects) const;
+
+};
+
+class Intersection {
+public:
+
+    bool hit;
+    Shape *obj;
+
+    Intersection() {hit = false;}
 };
 
 class Camera {
@@ -54,8 +67,7 @@ public:
 
 void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
-glm::vec3 trace(const Ray &r, int depth, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
-
+glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
 
 #include "raytrace.cpp"
 

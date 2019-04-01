@@ -7,26 +7,42 @@
 /* SHAPE */
 
 Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}) {}
-Shape::Shape(glm::vec3 col) : color(col) {}
+Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0) {}
+Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec) {}
 
-glm::vec3 Shape::surface(const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
-    glm::vec3 _color{0.0, 0.0, 0.0};
+glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
+    glm::vec3 _color, lambert_color, specular_color;
+    lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
 
-    for (auto &l : lights) {
+    glm::vec3 norm = this->normal(point);
 
-        glm::vec3 norm = this->normal(point);
-        if (l->visible(point + (norm * 0.0001f), objects)) {
-            float contribution = glm::dot(glm::normalize(l->position - point), norm);
-            if (contribution > 0) {
-                _color += (l->color * contribution);
+    if (lambert) {
+        for (auto &l : lights) {
+
+            if (l->visible(point + (norm * 0.0001f), objects)) {
+                float contribution = glm::dot(glm::normalize(l->position - point), norm);
+                if (contribution > 0) {
+                    lambert_color += (l->color * contribution);
+                }
             }
         }
+
+        lambert_color *= this->color; // scale it by the object's color
     }
 
+    if (specular) {
+        Ray reflected_ray{point, glm::reflect(ray.vector, norm)};
+        reflected_ray.depth = ray.depth + 1;
+
+        specular_color = trace(reflected_ray, objects, lights);
+    }
+
+    _color = (lambert_color * lambert) + (specular_color * specular);
+
+    // Prevent colors from exceeding 1.0
     _color.x = std::min(_color.x, 1.0f);
     _color.y = std::min(_color.y, 1.0f);
     _color.z = std::min(_color.z, 1.0f);
-    _color *= this->color; // scale it by the object's color
 
     return _color;
 }
@@ -38,7 +54,10 @@ glm::vec3 Shape::surface(const glm::vec3& point, const std::vector<Shape*>& obje
 Sphere::Sphere(glm::vec3 ctr, float r) : center{ctr}, radius{r} {}
 
 // Constructor for a sphere of specified color
-Sphere::Sphere(glm::vec3 ctr, glm::vec3 col, float r) : Shape(col), center{ctr}, radius{r} {}
+Sphere::Sphere(glm::vec3 ctr, float r, glm::vec3 col) : Shape(col), center{ctr}, radius{r} {}
+
+// Constructor for a sphere of specified color and material
+Sphere::Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec) : Shape(col, lam, spec), center{ctr}, radius{r} {}
 
 // from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
 bool Sphere::solveQuadratic (const float &a, const float &b, const float &c, float &x0, float &x1) const {
@@ -100,6 +119,8 @@ Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) :
     v0(p0), v1(p1), v2(p2) {}
 Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col) :
     Shape(col), v0(p0), v1(p1), v2(p2) {}
+Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col, float lam, float spec) :
+    Shape(col, lam, spec), v0(p0), v1(p1), v2(p2) {}
 
 // From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 bool Triangle::intersect(const Ray& ray, float &t) const {

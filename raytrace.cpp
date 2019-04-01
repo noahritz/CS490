@@ -15,10 +15,28 @@ using std::vector;
 
 /* RAY CLASS */
 // Default Ray constructor
-Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0} {};
+Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0}, depth(0) {};
 
 // Ray constructor taking an origin and direction vector
-Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v} {};
+Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0) {};
+
+// Intersect Ray with a scene
+Intersection Ray::intersectScene(const std::vector<Shape*>& objects) const {
+    Intersection collision;
+
+    float t = 10000.0;
+    float t_test;
+    
+    for (Shape *o : objects) {
+        if (o->intersect(*this, t_test) && t_test < t) {
+            t = t_test;
+            collision.hit = true;
+            collision.obj = o;
+        }
+    }
+
+    return collision;
+}
 
 /* CAMERA CLASS */
 // Default constructor for Camera
@@ -47,14 +65,8 @@ Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 
 bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) const {
     Ray light_ray = Ray{point, glm::normalize(position - point)};
-    float _t;
-    for (auto &o : objects) {
-        if (o->intersect(light_ray, _t)) {
-            return false;
-        }
-    }
 
-    return true;
+    return !(light_ray.intersectScene(objects).hit);
 }
 
 Uint32 vecToHex(glm::vec3 v) { // maybe inline this?
@@ -89,8 +101,10 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
     int i = 0;
     for (auto &s : scene["objects"]["spheres"].GetArray()) {
         Sphere *sph = new Sphere{   vec3{s["x"].GetFloat(), s["y"].GetFloat(), s["z"].GetFloat()},
+                                    s["radius"].GetFloat(),
                                     vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
-                                    s["radius"].GetFloat()};
+                                    scene["materials"][s["material"].GetInt()]["lambert"].GetFloat(),
+                                    scene["materials"][s["material"].GetInt()]["specular"].GetFloat()};
         objects[i++] = sph;
     }
 
@@ -99,7 +113,9 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
         Triangle *tri = new Triangle{   vec3{t["v1"]["x"].GetFloat(), t["v1"]["y"].GetFloat(), t["v1"]["z"].GetFloat()},
                                         vec3{t["v2"]["x"].GetFloat(), t["v2"]["y"].GetFloat(), t["v2"]["z"].GetFloat()},
                                         vec3{t["v3"]["x"].GetFloat(), t["v3"]["y"].GetFloat(), t["v3"]["z"].GetFloat()},
-                                        vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()}};
+                                        vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()},
+                                        scene["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
+                                        scene["materials"][t["material"].GetInt()]["specular"].GetFloat()};
         objects[i++] = tri;
     }
 
@@ -137,7 +153,7 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
                     ray.vector = glm::normalize(vec3{px, py, -1});
 
                     // Check for collisions with the scene
-                    color += trace(ray, 0, objects, lights);
+                    color += trace(ray, objects, lights);
 
                 }
             }
@@ -157,10 +173,13 @@ void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene) {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
-    std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
+    std::cout << "Execution time: " << (double) duration.count() / 1000000.0 << " seconds" << std::endl;
 }
 
-vec3 trace(const Ray &r, int depth, const vector<Shape*>& objects, const vector<Light*>& lights) {
+vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& lights) {
+
+    // Return black after 2 bounces
+    if (ray.depth > 2) return vec3{0.0, 0.0, 0.0};
 
     // Intersect object(s)
     float t = 10000.0;
@@ -169,19 +188,20 @@ vec3 trace(const Ray &r, int depth, const vector<Shape*>& objects, const vector<
     Shape *hit_object;
 
     for (Shape *o : objects) {
-        if (o->intersect(r, t_test) && t_test < t) {
+        if (o->intersect(ray, t_test) && t_test < t) {
             t = t_test;
             hit = true;
             hit_object = o;
         }
     }
 
-    if (hit) {
+    Intersection collision = ray.intersectScene(objects);
+
+    if (collision.hit) {
         // get surface details of intersection
-        glm::vec3 pHit = r.origin + (r.vector * t);
-        return hit_object->surface(pHit, objects, lights);
+        glm::vec3 pHit = ray.origin + (ray.vector * t);
+        return hit_object->surface(ray, pHit, objects, lights);
     }
 
-    // Hit nothing, return black
     return vec3{0.0, 0.0, 0.0};
 }
