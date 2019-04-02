@@ -29,6 +29,7 @@ public:
 
     bool hit;
     Shape *obj;
+    glm::vec3 point;
 
     Intersection() {hit = false;}
 };
@@ -68,6 +69,8 @@ public:
 void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
 glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
+
+void tonemap(Uint32 *buffer, int w, int h);
 
 #include "raytrace.cpp"
 
