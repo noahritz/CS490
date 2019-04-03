@@ -54,6 +54,8 @@ public:
 
     void setView(float FOV);
     void move(const glm::vec3 pos, const glm::vec3 point);
+    glm::vec3 rightVector() const;
+    glm::vec3 upVector(glm::vec3 &right) const;
 
 };
 

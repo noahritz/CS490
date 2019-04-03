@@ -61,6 +61,14 @@ void Camera::move(const vec3 pos, const vec3 point) {
     dir = point;
 }
 
+vec3 Camera::rightVector() const {
+    return glm::normalize(glm::cross(glm::normalize(dir), vec3{0.0, 1.0, 0.0}));
+}
+
+vec3 Camera::upVector(vec3 &right) const {
+    return glm::normalize(glm::cross(glm::normalize(dir), right));
+}
+
 /* LIGHT CLASS */
 Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 
@@ -95,9 +103,9 @@ void render(Uint32 *buffer, Scene &scene) {
     std::vector<vec3> pixels(scene.camera.WIDTH*scene.camera.HEIGHT);
 
     // Establish camera direction
-    vec3 cameraForward = glm::normalize(scene.camera.dir - scene.camera.origin);
-    vec3 cameraRight = glm::normalize(glm::cross(cameraForward, vec3{0.0, 1.0, 0.0}));
-    vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
+    vec3 cameraForward = glm::normalize(scene.camera.dir);
+    vec3 cameraRight = scene.camera.rightVector();
+    vec3 cameraUp = scene.camera.upVector(cameraRight);
     vec3 px, py;
 
     // Create viewing ray

@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
     // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
 
+    // Render initial scene
     render(pixels, scene);
 
     if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
@@ -122,18 +123,99 @@ int main(int argc, char *argv[]) {
     }
     SDL_RenderPresent(renderer);
 
-    delete[] pixels;
-    delete[] buff;
+    SDL_Event event;
 
-    SDL_Event windowEvent;
+    glm::vec3 move{0.0, 0.0, 0.0};
+    glm::vec3 angle{0.0, 0.0, 0.0};
+    float move_speed = 5.0;
+    bool rendering = false;
+    bool quit = false;
+    while (!quit) {
+        // Render picture if move has changed
+        if (rendering) {
+            std::cout << "Rendering" << std::endl;
 
-    while (true) {
-        if (SDL_PollEvent(&windowEvent)) {
-            if (windowEvent.type == SDL_QUIT) {
-                break;
+            // Move camera
+            move.y = 0.0;
+            if (move != vec3{0.0, 0.0, 0.0}) {
+                scene.camera.origin += glm::normalize(move) * move_speed;
+            }
+            if (angle != vec3{0.0, 0.0, 0.0}) {
+                scene.camera.dir += glm::normalize(angle);
+            }
+
+            render(pixels, scene);
+
+            if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
+                std::cout << "ERROR: " << SDL_GetError() << std::endl;
+            }
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_RenderClear(renderer);
+            if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
+                std::cout << "ERROR: " << SDL_GetError() << std::endl;
+            }
+            SDL_RenderPresent(renderer);
+
+            move.x = 0.0;
+            move.y = 0.0;
+            move.z = 0.0;
+            angle.x = 0.0;
+            angle.y = 0.0;
+            angle.z = 0.0;
+            rendering = false;
+        }
+
+        // Poll events
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym) {
+                        case SDLK_w:
+                            move += glm::normalize(scene.camera.dir);
+                            rendering = true;
+                            break;
+                        case SDLK_a:
+                            move -= glm::normalize(scene.camera.rightVector());
+                            rendering = true;
+                            break;
+                        case SDLK_s:
+                            move -= glm::normalize(scene.camera.dir);
+                            rendering = true;
+                            break;
+                        case SDLK_d:
+                            move += glm::normalize(scene.camera.rightVector());
+                            rendering = true;
+                            break;
+                        case SDLK_UP:
+                            // angle.y += 1.0;
+                            // rendering = true;
+                            break;
+                        case SDLK_LEFT:
+                            angle.x -= 1.0;
+                            rendering = true;
+                            break;
+                        case SDLK_DOWN:
+                            // angle.y -= 1.0;
+                            // rendering = true;
+                            break;
+                        case SDLK_RIGHT:
+                            angle.x += 1.0;
+                            rendering = true;
+                            break;
+                    }
+                    break;
+                case SDL_QUIT:
+                    quit = true;
+                    break;
             }
         }
     }
+
+    delete[] pixels;
+    delete[] buff;
+
+    std::cout << "END" << std::endl;
 
     SDL_DestroyWindow(window);
     SDL_Quit();
