@@ -10,18 +10,6 @@ Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}) {}
 Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0) {}
 Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec) {}
 
-float hable(float x)
-{
-    float A = 0.15;
-    float B = 0.50;
-    float C = 0.10;
-    float D = 0.20;
-    float E = 0.02;
-    float F = 0.30;
-
-    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
-}
-
 glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
     glm::vec3 _color, lambert_color, specular_color;
     lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
@@ -51,11 +39,6 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
     }
 
     _color = (lambert_color * lambert) + (specular_color * specular);
-
-    // Prevent colors from exceeding 1.0
-    _color.x = std::min(_color.x, 1.0f);
-    _color.y = std::min(_color.y, 1.0f);
-    _color.z = std::min(_color.z, 1.0f);
 
     return _color;
 }

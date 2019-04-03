@@ -37,12 +37,16 @@ public:
 class Camera {
 public:
 
+    glm::vec3 origin;
+    glm::vec3 dir;
     float fov;
     const int WIDTH;
     const int HEIGHT;
     float aspectRatio;
-    glm::vec3 origin;
-    glm::vec3 dir;
+    float halfWidth;
+    float halfHeight;
+    float pixelHeight;
+    float pixelWidth;
 
     // Constructor
     Camera();
@@ -65,12 +69,24 @@ public:
 
 };
 
+class Scene {
+public:
+
+    Camera camera;
+    std::vector<Shape*> objects;
+    std::vector<Light*> lights;
+    int AA;
+
+    Scene(int w, int h, float fov, int total_objects, int total_lights);
+
+};
+
 
 void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
 
 glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
 
-void tonemap(Uint32 *buffer, int w, int h);
+void fillBuffer(Uint32 *buffer, std::vector<glm::vec3> pixels, int size);
 
 #include "raytrace.cpp"
 
