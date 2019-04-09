@@ -54,6 +54,8 @@ public:
 
     void setView(float FOV);
     void move(const glm::vec3 pos, const glm::vec3 point);
+    void translate(const glm::vec3 move_by);
+    void setAngle(const float theta, const float phi);
     glm::vec3 rightVector() const;
     glm::vec3 upVector(glm::vec3 &right) const;
 

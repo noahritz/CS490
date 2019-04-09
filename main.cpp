@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL.h>
 #include <glm/vec3.hpp>
+#include <glm/common.hpp>
 #include "rapidjson/document.h"
 
 #include "raytrace.hpp"
@@ -110,6 +111,11 @@ int main(int argc, char *argv[]) {
     // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
 
+    // Set up initial camera angle
+    float camera_theta = glm::atan(scene.camera.dir.z, scene.camera.dir.x);
+    float camera_phi = glm::atan(glm::sqrt((scene.camera.dir.x*scene.camera.dir.x) + (scene.camera.dir.z*scene.camera.dir.z))/ scene.camera.dir.y);
+    scene.camera.setAngle(camera_theta, camera_phi);
+
     // Render initial scene
     render(pixels, scene);
 
@@ -127,8 +133,8 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
 
     glm::vec3 move{0.0, 0.0, 0.0};
-    glm::vec3 angle{0.0, 0.0, 0.0};
-    float xz_angle = -M_PI/2;
+    float min_phi = M_PI/4;
+    float max_phi = 5 * M_PI/8;
     float move_speed = 5.0;
     bool rendering = false;
     bool quit = false;
@@ -139,16 +145,12 @@ int main(int argc, char *argv[]) {
 
             // Move camera
             move.y = 0.0;
-            if (move != vec3{0.0, 0.0, 0.0}) {
-                scene.camera.origin += glm::normalize(move) * move_speed;
-            }
+            scene.camera.translate(move * move_speed);
 
-            angle = glm::normalize(vec3{glm::cos(xz_angle), angle.y, glm::sin(xz_angle)});
-            if (angle == vec3{0.0, 0.0, 0.0}) {
-                scene.camera.dir = angle;
-            } else {
-                scene.camera.dir = glm::normalize(angle);
-            }
+            camera_phi = glm::clamp(camera_phi, min_phi, max_phi);
+            scene.camera.setAngle(camera_theta, camera_phi);
+
+            std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
 
             render(pixels, scene);
 
@@ -170,7 +172,7 @@ int main(int argc, char *argv[]) {
         }
 
         // Poll events
-        while (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event) && !rendering) {
             switch (event.type) {
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
@@ -191,23 +193,22 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_UP:
-                            // angle.y += 1.0;
-                            // rendering = true;
+                            camera_phi -= M_PI/8;
+                            rendering = true;
                             break;
                         case SDLK_LEFT:
-                            xz_angle -= M_PI/4;
+                            camera_theta -= M_PI/4;
                             rendering = true;
                             break;
                         case SDLK_DOWN:
-                            // angle.y -= 1.0;
-                            // rendering = true;
+                            camera_phi += M_PI/8;
+                            rendering = true;
                             break;
                         case SDLK_RIGHT:
-                            xz_angle += M_PI/4;
+                            camera_theta += M_PI/4;
                             rendering = true;
                             break;
                     }
-                    std::cout << xz_angle * 180.0 / M_PI << ' ' << '(' << angle.x << ", " << angle.y << ", " << angle.z << ')' << std::endl;
                     break;
                 case SDL_QUIT:
                     quit = true;

@@ -61,6 +61,23 @@ void Camera::move(const vec3 pos, const vec3 point) {
     dir = point;
 }
 
+// Move Camera by given amount
+void Camera::translate(const glm::vec3 move_by) {
+    if (move_by != vec3{0.0, 0.0, 0.0}) {
+        origin += glm::normalize(move_by);
+    }
+}
+
+// Set Camera Angle
+void Camera::setAngle(const float theta, const float phi) {
+    glm::vec3 angle = glm::normalize(vec3{glm::cos(theta) * glm::sin(phi), glm::cos(phi), glm::sin(theta) * glm::sin(phi)});
+    if (angle == vec3{0.0, 0.0, 0.0}) {
+        dir = angle;
+    } else {
+        dir = glm::normalize(angle);
+    }
+}
+
 vec3 Camera::rightVector() const {
     return glm::normalize(glm::cross(glm::normalize(dir), vec3{0.0, 1.0, 0.0}));
 }
