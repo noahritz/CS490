@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include <assert.h>
 
 #include <SDL2/SDL.h>
@@ -127,6 +128,7 @@ int main(int argc, char *argv[]) {
 
     glm::vec3 move{0.0, 0.0, 0.0};
     glm::vec3 angle{0.0, 0.0, 0.0};
+    float xz_angle = -M_PI/2;
     float move_speed = 5.0;
     bool rendering = false;
     bool quit = false;
@@ -140,8 +142,12 @@ int main(int argc, char *argv[]) {
             if (move != vec3{0.0, 0.0, 0.0}) {
                 scene.camera.origin += glm::normalize(move) * move_speed;
             }
-            if (angle != vec3{0.0, 0.0, 0.0}) {
-                scene.camera.dir += glm::normalize(angle);
+
+            angle = glm::normalize(vec3{glm::cos(xz_angle), angle.y, glm::sin(xz_angle)});
+            if (angle == vec3{0.0, 0.0, 0.0}) {
+                scene.camera.dir = angle;
+            } else {
+                scene.camera.dir = glm::normalize(angle);
             }
 
             render(pixels, scene);
@@ -160,9 +166,6 @@ int main(int argc, char *argv[]) {
             move.x = 0.0;
             move.y = 0.0;
             move.z = 0.0;
-            angle.x = 0.0;
-            angle.y = 0.0;
-            angle.z = 0.0;
             rendering = false;
         }
 
@@ -192,7 +195,7 @@ int main(int argc, char *argv[]) {
                             // rendering = true;
                             break;
                         case SDLK_LEFT:
-                            angle.x -= 1.0;
+                            xz_angle -= M_PI/4;
                             rendering = true;
                             break;
                         case SDLK_DOWN:
@@ -200,10 +203,11 @@ int main(int argc, char *argv[]) {
                             // rendering = true;
                             break;
                         case SDLK_RIGHT:
-                            angle.x += 1.0;
+                            xz_angle += M_PI/4;
                             rendering = true;
                             break;
                     }
+                    std::cout << xz_angle * 180.0 / M_PI << ' ' << '(' << angle.x << ", " << angle.y << ", " << angle.z << ')' << std::endl;
                     break;
                 case SDL_QUIT:
                     quit = true;

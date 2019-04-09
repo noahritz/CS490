@@ -168,7 +168,7 @@ void render(Uint32 *buffer, Scene &scene) {
 vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& lights) {
 
     // Return black after 2 bounces
-    if (ray.depth > 2) return vec3{0.0, 0.0, 0.0};
+    if (ray.depth > 4) return vec3{0.0, 0.0, 0.0};
 
     // Intersect object(s)
     float t = 10000.0;

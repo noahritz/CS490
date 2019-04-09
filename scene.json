@@ -72,7 +72,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "material": 0
+                "material": 1
             },
             {
                 "v1": {
@@ -93,7 +93,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "material": 0
+                "material": 1
             },
             {
                 "v1": {
@@ -356,8 +356,8 @@
             "specular": 0.0
         },
         {
-            "lambert": 0.05,
-            "specular": 0.95
+            "lambert": 0.0,
+            "specular": 1.0
         }
     ]
 }
