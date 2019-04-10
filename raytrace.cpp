@@ -103,6 +103,16 @@ bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) 
 /* SCENE CLASS */
 Scene::Scene(int w, int h, float fov, int total_objects, int total_lights): camera(Camera{w, h, fov}), objects(std::vector<Shape*>{total_objects}), lights(std::vector<Light*>{total_lights}) {}
 
+/* GRID CLASS */
+Grid::Grid(vec3 s, glm::ivec3 dim, glm::vec3 grid_min, glm::vec3 grid_max) :    size(s),
+                                                                                dimensions(dim),
+                                                                                min(grid_min),
+                                                                                max(grid_max),
+                                                                                cells(dim.x*dim.y*dim.z) {}
+
+vector<Shape *>& Grid::at(int x, int y, int z) {
+    return cells[(dimensions.x * dimensions.y * z) + (dimensions.x * y) + x];
+}
 
 Uint32 vecToHex(glm::vec3 v) { // maybe inline this?
     return (((Uint32) (v.r * 255.0)) << 16) + (((Uint32) (v.g * 255.0)) << 8) + ((Uint32) (v.b * 255.0));
@@ -114,7 +124,7 @@ void hexToVec(glm::vec3 &v, const Uint32 &h) {
     v.b = (h & 255) / 255.0;
 }
 
-void render(Uint32 *buffer, Scene &scene) {
+void render(Uint32 *buffer, Scene &scene, Grid& grid) {
 
     // Create vector of rgb pixels
     std::vector<vec3> pixels(scene.camera.WIDTH*scene.camera.HEIGHT);

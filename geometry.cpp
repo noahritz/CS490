@@ -9,6 +9,7 @@
 Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}) {}
 Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0) {}
 Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec) {}
+Shape::~Shape() {}
 
 glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
     glm::vec3 _color, lambert_color, specular_color;
@@ -108,6 +109,13 @@ glm::vec3 Sphere::normal(const glm::vec3& point) const {
     return glm::normalize(point - center);
 }
 
+glm::vec3 Sphere::min() const {
+    return glm::vec3{center.x - radius, center.y - radius, center.z - radius};
+}
+
+glm::vec3 Sphere::max() const {
+    return glm::vec3{center.x + radius, center.y + radius, center.z + radius};
+}
 
 /* TRIANGLE */
 
@@ -156,4 +164,12 @@ glm::vec3 Triangle::normal(const glm::vec3& point) const {
     glm::vec3 b = v2 - v0;
 
     return glm::normalize(glm::cross(a, b));
+}
+
+glm::vec3 Triangle::min() const {
+    return glm::vec3{std::min({v0.x, v1.x, v2.x}), std::min({v0.y, v1.y, v2.y}), std::min({v0.z, v1.z, v2.z})};
+}
+
+glm::vec3 Triangle::max() const {
+    return glm::vec3{std::max({v0.x, v1.x, v2.x}), std::max({v0.y, v1.y, v2.y}), std::max({v0.z, v1.z, v2.z})};
 }

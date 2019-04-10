@@ -85,8 +85,21 @@ public:
 
 };
 
+class Grid {
+public:
 
-void render(Uint32 *buffer, int width, int height, rapidjson::Document &scene);
+    glm::vec3 size;
+    glm::ivec3 dimensions;
+    std::vector<std::vector<Shape *>> cells;
+    glm::vec3 min;
+    glm::vec3 max;
+
+    Grid(glm::vec3 s, glm::ivec3 dim, glm::vec3 grid_min, glm::vec3 grid_max);
+
+    std::vector<Shape *>& at(int x, int y, int z);
+};
+
+void render(Uint32 *buffer, rapidjson::Document &scene, Grid& grid);
 
 glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
 

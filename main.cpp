@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <algorithm>
 #include <assert.h>
 
 #include <SDL2/SDL.h>
@@ -73,28 +74,51 @@ int main(int argc, char *argv[]) {
     vec3 cameraPoint{d["camera"]["toX"].GetFloat(), d["camera"]["toY"].GetFloat(), d["camera"]["toZ"].GetFloat()};
     scene.camera.move(cameraPos, cameraPoint);
 
-    // Create vector of scene objects
+    // Create vector of scene objects and find scene bounding box
+    glm::vec3 scene_min{10000.0, 10000.0, 10000.0};
+    glm::vec3 scene_max{-10000.0, -10000.0, -10000.0};
 
     // Get sphere objects from json document
     int i = 0;
+    glm::vec3 ctr;
+    float rad;
     for (auto &s : d["objects"]["spheres"].GetArray()) {
-        Sphere *sph = new Sphere{   vec3{s["x"].GetFloat(), s["y"].GetFloat(), s["z"].GetFloat()},
-                                    s["radius"].GetFloat(),
+        ctr = vec3{s["x"].GetFloat(), s["y"].GetFloat(), s["z"].GetFloat()};
+        rad = s["radius"].GetFloat();
+        Sphere *sph = new Sphere{   ctr, rad,
                                     vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
                                     d["materials"][s["material"].GetInt()]["lambert"].GetFloat(),
                                     d["materials"][s["material"].GetInt()]["specular"].GetFloat()};
         scene.objects[i++] = sph;
+
+        scene_min.x = std::min(ctr.x - rad, scene_min.x);
+        scene_min.y = std::min(ctr.y - rad, scene_min.y);
+        scene_min.z = std::min(ctr.z - rad, scene_min.z);
+        scene_max.x = std::max(ctr.x - rad, scene_max.x);
+        scene_max.y = std::max(ctr.y - rad, scene_max.y);
+        scene_max.z = std::max(ctr.z - rad, scene_max.z);
     }
 
     // Get triangle objects from json document
+    glm::vec3 p1;
+    glm::vec3 p2;
+    glm::vec3 p3;
     for (auto &t : d["objects"]["triangles"].GetArray()) {
-        Triangle *tri = new Triangle{   vec3{t["v1"]["x"].GetFloat(), t["v1"]["y"].GetFloat(), t["v1"]["z"].GetFloat()},
-                                        vec3{t["v2"]["x"].GetFloat(), t["v2"]["y"].GetFloat(), t["v2"]["z"].GetFloat()},
-                                        vec3{t["v3"]["x"].GetFloat(), t["v3"]["y"].GetFloat(), t["v3"]["z"].GetFloat()},
+        p1 = vec3{t["v1"]["x"].GetFloat(), t["v1"]["y"].GetFloat(), t["v1"]["z"].GetFloat()};
+        p2 = vec3{t["v2"]["x"].GetFloat(), t["v2"]["y"].GetFloat(), t["v2"]["z"].GetFloat()};
+        p3 = vec3{t["v3"]["x"].GetFloat(), t["v3"]["y"].GetFloat(), t["v3"]["z"].GetFloat()};
+        Triangle *tri = new Triangle{   p1, p2, p3,
                                         vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()},
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat()};
         scene.objects[i++] = tri;
+
+        scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
+        scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
+        scene_min.z = std::min({p1.z, p2.z, p3.z, scene_min.z});
+        scene_max.x = std::max({p1.x, p2.x, p3.x, scene_max.x});
+        scene_max.y = std::max({p1.y, p2.y, p3.y, scene_max.y});
+        scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
     }
 
     // Get scene lights from json document
@@ -104,6 +128,46 @@ int main(int argc, char *argv[]) {
                                 vec3{l["r"].GetFloat(), l["g"].GetFloat(), l["b"].GetFloat()}};
         scene.lights[i++] = lgt;
     }
+
+    // Create grid
+    float delta = 3.0;
+    glm::vec3 grid_size = scene_max - scene_min;
+    float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
+    grid_size *= grid_conversion;
+    Grid grid{grid_size, glm::ivec3{(int) grid_size.x, (int) grid_size.y, (int) grid_size.z}, scene_min, scene_max};
+    
+    // Fill grid with triangles
+
+    int xx, yy, zz;
+    glm::vec3 obj_min, obj_max;
+    glm::vec3 cell_min, cell_max;
+    glm::vec3 fdimensions{(float) grid.dimensions.x, (float) grid.dimensions.y, (float) grid.dimensions.z};
+    glm::vec3 cell_size = grid.size / fdimensions;
+    for (auto o : scene.objects) {
+        obj_min = o->min();
+        obj_max = o->max();
+        cell_min = obj_min / cell_size;
+        cell_max = obj_max / cell_size;
+        for (xx = cell_min.x; xx <= cell_max.x && xx < grid.dimensions.x; xx++) {
+            for (yy = cell_min.y; yy <= cell_max.y && yy < grid.dimensions.y; yy++) {
+                for (zz = cell_min.z; zz <= cell_max.z && zz < grid.dimensions.z; zz++) {
+                    grid.at(xx, yy, zz).push_back(o); // NOTE: Possible error point (floats converting to ints incorrectly, not entirely sure)
+                }
+            }
+        }
+    }
+
+    // Test Uniform Grid Creation
+    // printf("Created %ix%ix%i uniform grid\n", grid.dimensions.x, grid.dimensions.y, grid.dimensions.z);
+    // for (int i = 0; i < grid.dimensions.x; i++) {
+    //     std::cout << i << std::endl;
+    //     for (int j = 0; j < grid.dimensions.y; j++) {
+    //         std::cout << "\t" << j << std::endl;
+    //         for (int k = 0; k < grid.dimensions.z; k++) {
+    //             std::cout << "\t\t" << k << ": " << grid.at(i, j, k).size() << std::endl;
+    //         }
+    //     }
+    // }
 
     // Anti-Aliasing
     scene.AA = d["AA"].GetInt();
@@ -117,7 +181,7 @@ int main(int argc, char *argv[]) {
     scene.camera.setAngle(camera_theta, camera_phi);
 
     // Render initial scene
-    render(pixels, scene);
+    render(pixels, scene, grid);
 
     if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
         std::cout << "ERROR: " << SDL_GetError() << std::endl;
@@ -152,7 +216,7 @@ int main(int argc, char *argv[]) {
 
             std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
 
-            render(pixels, scene);
+            render(pixels, scene, grid);
 
             if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
                 std::cout << "ERROR: " << SDL_GetError() << std::endl;
