@@ -94,9 +94,9 @@ int main(int argc, char *argv[]) {
         scene_min.x = std::min(ctr.x - rad, scene_min.x);
         scene_min.y = std::min(ctr.y - rad, scene_min.y);
         scene_min.z = std::min(ctr.z - rad, scene_min.z);
-        scene_max.x = std::max(ctr.x - rad, scene_max.x);
-        scene_max.y = std::max(ctr.y - rad, scene_max.y);
-        scene_max.z = std::max(ctr.z - rad, scene_max.z);
+        scene_max.x = std::max(ctr.x + rad, scene_max.x);
+        scene_max.y = std::max(ctr.y + rad, scene_max.y);
+        scene_max.z = std::max(ctr.z + rad, scene_max.z);
     }
 
     // Get triangle objects from json document
@@ -133,41 +133,65 @@ int main(int argc, char *argv[]) {
     float delta = 3.0;
     glm::vec3 grid_size = scene_max - scene_min;
     float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
-    grid_size *= grid_conversion;
-    Grid grid{grid_size, glm::ivec3{(int) grid_size.x, (int) grid_size.y, (int) grid_size.z}, scene_min, scene_max};
+    Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
+    for (int i = 0; i < 3; i++) {
+        if (grid.dimensions[i] <= 0) {
+            grid.dimensions[i] = 1;
+        }
+    }
     
     // Fill grid with triangles
 
     int xx, yy, zz;
     glm::vec3 obj_min, obj_max;
-    glm::vec3 cell_min, cell_max;
+    glm::ivec3 cell_min, cell_max;
     glm::vec3 fdimensions{(float) grid.dimensions.x, (float) grid.dimensions.y, (float) grid.dimensions.z};
     glm::vec3 cell_size = grid.size / fdimensions;
+    int objs_placed = 0; // for testing
     for (auto o : scene.objects) {
+        bool placed = false; // for testing
+
         obj_min = o->min();
         obj_max = o->max();
-        cell_min = obj_min / cell_size;
-        cell_max = obj_max / cell_size;
+        cell_min = (glm::ivec3) glm::floor(obj_min / cell_size);
+        cell_max = (glm::ivec3) glm::floor(obj_max / cell_size);
+
+        // Ensure objects on the end are placed in the grid
+        for (int i = 0; i < 3; i++) {
+            cell_min[i] = glm::clamp(cell_min[i], 0, grid.dimensions[i] - 1);
+            cell_max[i] = glm::clamp(cell_max[i], 0, grid.dimensions[i] - 1);
+        }
+
         for (xx = cell_min.x; xx <= cell_max.x && xx < grid.dimensions.x; xx++) {
             for (yy = cell_min.y; yy <= cell_max.y && yy < grid.dimensions.y; yy++) {
                 for (zz = cell_min.z; zz <= cell_max.z && zz < grid.dimensions.z; zz++) {
                     grid.at(xx, yy, zz).push_back(o); // NOTE: Possible error point (floats converting to ints incorrectly, not entirely sure)
+                    placed = true; // for testing
                 }
             }
+        }
+
+        if (placed) {
+            objs_placed++; // for testing
         }
     }
 
     // Test Uniform Grid Creation
-    // printf("Created %ix%ix%i uniform grid\n", grid.dimensions.x, grid.dimensions.y, grid.dimensions.z);
+    printf("Created %ix%ix%i uniform grid\n", grid.dimensions.x, grid.dimensions.y, grid.dimensions.z);
     // for (int i = 0; i < grid.dimensions.x; i++) {
     //     std::cout << i << std::endl;
     //     for (int j = 0; j < grid.dimensions.y; j++) {
     //         std::cout << "\t" << j << std::endl;
     //         for (int k = 0; k < grid.dimensions.z; k++) {
-    //             std::cout << "\t\t" << k << ": " << grid.at(i, j, k).size() << std::endl;
+    //             // std::cout << "\t\t" << k << ": " << grid.at(i, j, k).size() << std::endl;
+    //             std::cout << "\t\t" << k << std::endl;
+    //             for (auto &o : grid.at(i, j, k)) {
+    //                 std::cout << "\t\t\t" << o << std::endl;
+    //             }
     //         }
     //     }
     // }
+    std::cout << objs_placed << " objects placed into grid" << std::endl;
 
     // Anti-Aliasing
     scene.AA = d["AA"].GetInt();

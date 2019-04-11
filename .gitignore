@@ -2,3 +2,4 @@
 *.exe
 # Ignore VSCode settings
 .vscode
+scene_orig.json

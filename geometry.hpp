@@ -18,7 +18,7 @@ public:
     virtual ~Shape();
 
     virtual bool intersect(const Ray& ray, float &t) const = 0;
-    glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const;
+    glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const;
     virtual glm::vec3 normal(const glm::vec3& point) const = 0;
     virtual glm::vec3 min() const = 0;
     virtual glm::vec3 max() const = 0;

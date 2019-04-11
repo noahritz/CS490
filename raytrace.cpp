@@ -15,10 +15,14 @@ using std::vector;
 
 /* RAY CLASS */
 // Default Ray constructor
-Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0}, depth(0) {};
+Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0}, depth(0) {
+    invdir = 1.0f/vector;
+};
 
 // Ray constructor taking an origin and direction vector
-Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0) {};
+Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0) {
+    invdir = 1.0f/vector; 
+};
 
 // Intersect Ray with a scene
 Intersection Ray::intersectScene(const std::vector<Shape*>& objects) const {
@@ -33,10 +37,44 @@ Intersection Ray::intersectScene(const std::vector<Shape*>& objects) const {
             collision.hit = true;
             collision.obj = o;
             collision.point = origin + (vector * t);
+            collision.t = t;
         }
     }
 
     return collision;
+}
+
+// Adapted from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
+bool Ray::intersectBox(vec3 min, vec3 max, float &t_min, float &t_max) const {
+    glm::vec3 sign{(invdir.x < 0), (invdir.y < 0), (invdir.z < 0)};
+    glm::vec3 bounds[] = {min, max};
+
+    float t_ymin, t_ymax, t_zmin, t_zmax;
+
+    t_min = (bounds[(int) sign[0]].x - origin.x) * invdir.x;
+    t_max = (bounds[(int) (1-sign[0])].x - origin.x) * invdir.x;
+
+    t_ymin = (bounds[(int) sign[1]].y - origin.y) * invdir.y;
+    t_ymax = (bounds[(int) (1-sign[1])].y - origin.y) * invdir.y;
+
+    if ((t_min > t_ymax) || (t_ymin > t_max))
+        return false;
+    if (t_ymin > t_min)
+        t_min = t_ymin;
+    if (t_ymax < t_max)
+        t_max = t_ymax;
+
+    t_zmin = (bounds[(int) sign[2]].z - origin.z) * invdir.z;
+    t_zmax = (bounds[(int) (1-sign[2])].z - origin.z) * invdir.z;
+
+    if ((t_min > t_zmax) || (t_zmin > t_max))
+        return false;
+    if (t_zmin > t_min)
+        t_min = t_zmin;
+    if (t_zmax < t_max)
+        t_max = t_zmax;
+
+    return true; 
 }
 
 /* CAMERA CLASS */
@@ -163,9 +201,10 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
                     py = cameraUp * (( (y + (float) yy / (float) (scene.AA + 1)) * scene.camera.pixelHeight) - scene.camera.halfHeight);
 
                     ray.vector = glm::normalize(cameraForward + px + py);
+                    ray.invdir = 1.0f/ray.vector;
 
                     // Check for collisions with the scene
-                    color += trace(ray, scene.objects, scene.lights);
+                    color += trace(ray, scene.objects, scene.lights, grid);
 
                 }
             }
@@ -192,32 +231,65 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
     std::cout << "Execution time: " << (double) duration.count() / 1000000.0 << " seconds" << std::endl;
 }
 
-vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& lights) {
+vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& lights, Grid& grid) {
 
     // Return black after 2 bounces
     if (ray.depth > 4) return vec3{0.0, 0.0, 0.0};
 
-    // Intersect object(s)
-    float t = 10000.0;
-    float t_test;
-    bool hit = false;
-    Shape *hit_object;
+    /* ** Traverse grid ** */
+    // Check if ray intersects grid
+    float t_min, t_max;
+    if (!ray.intersectBox(grid.min, grid.max, t_min, t_max)) {
+        return vec3{0.0, 0.0, 0.0};
+    }
 
-    for (Shape *o : objects) {
-        if (o->intersect(ray, t_test) && t_test < t) {
-            t = t_test;
-            hit = true;
-            hit_object = o;
+    // Setup traversal
+    vec3 cell_dimensions = (grid.size) / (vec3) grid.dimensions;
+
+    glm::vec3 ray_orig_cell, delta_t, next_crossing_t;
+    glm::ivec3 step, exit, current_cell;
+    for (int i = 0; i < 3; i++) {
+        ray_orig_cell[i] = (ray.origin[i] + (ray.vector[i] * t_min)) - grid.min[i];
+        current_cell[i] = glm::clamp((int) glm::floor(ray_orig_cell[i] / cell_dimensions[i]), 0, grid.dimensions[i] - 1);
+        if (ray.vector[i] < 0) {
+            delta_t[i] = -cell_dimensions[i] * ray.invdir[i];
+            next_crossing_t[i] = t_min + (current_cell[i] * cell_dimensions[i] - ray_orig_cell[i]) * ray.invdir[i];
+            exit[i] = -1;
+            step[i] = -1;
+        } else {
+            delta_t[i] = cell_dimensions[i] * ray.invdir[i];
+            next_crossing_t[i] = t_min + ((current_cell[i] + 1) * cell_dimensions[i] - ray_orig_cell[i]) * ray.invdir[i];
+            exit[i] = grid.dimensions[i];
+            step[i] = 1;
         }
     }
 
+    // Traverse grid
     Intersection collision = ray.intersectScene(objects);
+    while (true) {
+        collision = ray.intersectScene(grid.at(current_cell.x, current_cell.y, current_cell.z));
+
+        Uint8 k =   ((next_crossing_t.x < next_crossing_t.y) << 2) + 
+                    ((next_crossing_t.x < next_crossing_t.z) << 1) + 
+                    ((next_crossing_t.y < next_crossing_t.z));
+        static const Uint8 map[8] = {2, 1, 2, 1, 2, 2, 0, 0};
+        Uint8 axis = map[k];
+
+        if (collision.t < next_crossing_t[axis])
+            break;
+
+        current_cell[axis] += step[axis];
+
+        if (current_cell[axis] == exit[axis])
+            break;
+
+        next_crossing_t[axis] += delta_t[axis];
+    }
 
     if (collision.hit) {
         // get surface details of intersection
-        // return vec3{0.0, 0.5, 0.0};
-        glm::vec3 pHit = ray.origin + (ray.vector * t);
-        return hit_object->surface(ray, pHit, objects, lights);
+        // return {0.1, 0.4, 0.1};
+        return collision.obj->surface(ray, collision.point, objects, lights, grid);
     }
 
     return vec3{0.0, 0.0, 0.0};

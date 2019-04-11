@@ -11,7 +11,7 @@ Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0) {}
 Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec) {}
 Shape::~Shape() {}
 
-glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights) const {
+glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const {
     glm::vec3 _color, lambert_color, specular_color;
     lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
 
@@ -36,7 +36,7 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
         Ray reflected_ray{point + (reflected_vec * 0.01f), reflected_vec};
         reflected_ray.depth = ray.depth + 1;
 
-        specular_color = trace(reflected_ray, objects, lights);
+        specular_color = trace(reflected_ray, objects, lights, grid);
     }
 
     _color = (lambert_color * lambert) + (specular_color * specular);

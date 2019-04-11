@@ -18,9 +18,11 @@ public:
 
     glm::vec3 origin;
     glm::vec3 vector;
+    glm::vec3 invdir;
     int depth;
 
     Intersection intersectScene(const std::vector<Shape*>& objects) const;
+    bool intersectBox(const glm::vec3 min, const glm::vec3 max, float &tmin, float &tmax) const;
 
 };
 
@@ -30,8 +32,9 @@ public:
     bool hit;
     Shape *obj;
     glm::vec3 point;
+    float t;
 
-    Intersection() {hit = false;}
+    Intersection() {hit = false; t = 10000.0;}
 };
 
 class Camera {
@@ -101,7 +104,7 @@ public:
 
 void render(Uint32 *buffer, rapidjson::Document &scene, Grid& grid);
 
-glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights);
+glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vector<Light*>& lights, Grid& grid);
 
 void fillBuffer(Uint32 *buffer, std::vector<glm::vec3> pixels, int size);
 
