@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <omp.h>
 
 #include <glm/vec3.hpp>
 #include <glm/trigonometric.hpp>
@@ -180,6 +181,13 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
     auto start = std::chrono::high_resolution_clock::now();
     auto recent = start;
 
+    #pragma omp parallel 
+    {
+        int tid = omp_get_thread_num();
+        std::cout << tid << std::endl;
+    }
+
+    #pragma omp parallel for shared(pixels, buffer) private(px, py, ray)
     for (int x = 0; x < scene.camera.WIDTH; x++) {
         for (int y = 0; y < scene.camera.HEIGHT; y++) {
             

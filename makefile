@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11
+CXXFLAGS = -std=c++11 -fopenmp
 
 # These options disable the command line
 SDLCOMPILE = -Wl,-subsystem,windows
@@ -19,6 +19,7 @@ OBJS = main.cpp
 OBJ_NAME = test
 
 main: main.cpp
+	export OMP_NUM_THREADS=4
 	$(CXX) $(CXXFLAGS) -o $(OBJ_NAME) $(OBJS) $(SDLFLAGS) $(GLMFLAGS) $(RJFLAGS)
 
 # 	$(CXX) $(CXXFLAGS) $(SDLFLAGS) -o $(OBJ_NAME) $(OBJS)		Why doesn't this work?
