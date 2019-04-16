@@ -88,6 +88,26 @@ Camera::Camera(int w, int h, float FOV) : WIDTH(w), HEIGHT(h), origin{0.0, 0.0, 
     setView(FOV);
 }
 
+void Camera::setPreview(bool b) {
+    if (b) {
+        WIDTH = PREVIEW_WIDTH;
+        HEIGHT = PREVIEW_HEIGHT;
+        halfWidth = previewHalfWidth;
+        halfHeight = previewHalfHeight;
+        pixelWidth = previewPixelWidth;
+        pixelHeight = previewPixelHeight;
+    } else {
+        WIDTH = FULL_WIDTH;
+        HEIGHT = FULL_HEIGHT;
+        halfWidth = fullHalfWidth;
+        halfHeight = fullHalfHeight;
+        pixelWidth = fullPixelWidth;
+        pixelHeight = fullPixelHeight;
+    }
+
+    preview = b;
+}
+
 // Set the field of view
 void Camera::setView(float FOV) {
     fov = FOV;
@@ -164,6 +184,9 @@ void hexToVec(glm::vec3 &v, const Uint32 &h) {
 }
 
 void render(Uint32 *buffer, Scene &scene, Grid& grid) {
+    std::cout << "Rendering" << (scene.camera.preview ? " preview" : "") << std::endl;
+
+    std::cout << "Camera has width " << scene.camera.WIDTH << " and height " << scene.camera.HEIGHT << std::endl;
 
     // Create vector of rgb pixels
     std::vector<vec3> pixels(scene.camera.WIDTH*scene.camera.HEIGHT);
@@ -180,12 +203,6 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
 
     auto start = std::chrono::high_resolution_clock::now();
     auto recent = start;
-
-    #pragma omp parallel 
-    {
-        int tid = omp_get_thread_num();
-        std::cout << tid << std::endl;
-    }
 
     #pragma omp parallel for shared(pixels, buffer) private(px, py, ray)
     for (int x = 0; x < scene.camera.WIDTH; x++) {
@@ -306,14 +323,19 @@ vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& 
 void fillBuffer(Uint32 *buffer, std::vector<vec3> pixels, int size) {
     float maxI = 0.00001;
     float I;
+    #pragma omp parallel for private(I) shared(maxI, pixels)
     for (int i = 0; i < size; i++) {
         I = (0.3 * pixels[i].r) + (0.5 * pixels[i].g) + (0.2 * pixels[i].b);
-        if (I > maxI) {
-            maxI = I;
+        #pragma omp critical
+        {
+            if (I > maxI) {
+                maxI = I;
+            }
         }
     }
 
     float mult = 1.0/maxI;
+    #pragma omp parallel for shared(pixels)
     for (int i = 0; i < size; i++) {
         pixels[i] *= mult;
         if (pixels[i].r > 1.0) pixels[i].r = 1.0;

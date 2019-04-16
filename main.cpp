@@ -11,7 +11,10 @@
 
 #include "raytrace.hpp"
 
+// const int PREVIEW_WIDTH = 128, PREVIEW_HEIGHT = 96;
+const int PREVIEW_WIDTH = 160, PREVIEW_HEIGHT = 120;
 const int WIDTH = 640, HEIGHT = 480;
+// const int WIDTH = 1280, HEIGHT = 720;
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -32,6 +35,7 @@ int main(int argc, char *argv[]) {
 
     // Texture to draw pixels to
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+    SDL_Texture *previewTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
     // Read scene file from json
     int file_length = 0;
@@ -63,11 +67,26 @@ int main(int argc, char *argv[]) {
     int fov = d["camera"]["fov"].GetFloat();
     Scene scene{WIDTH, HEIGHT, fov, num_objects, num_lights};
 
+    scene.camera.WIDTH = WIDTH;
+    scene.camera.HEIGHT = HEIGHT;
+
+    scene.camera.FULL_WIDTH = WIDTH;
+    scene.camera.FULL_HEIGHT = HEIGHT;
+    scene.camera.PREVIEW_WIDTH = PREVIEW_WIDTH;
+    scene.camera.PREVIEW_HEIGHT = PREVIEW_HEIGHT;
+
     // Create a camera facing forward
-    scene.camera.halfWidth = glm::tan((scene.camera.fov / 2) * (M_PI / 180)); // A misnomer, but whatever
-    scene.camera.halfHeight = scene.camera.halfWidth * (WIDTH/HEIGHT);
-    scene.camera.pixelWidth = (scene.camera.halfWidth * 2) / (WIDTH - 1);
-    scene.camera.pixelHeight = (scene.camera.halfHeight * 2) / (HEIGHT - 1);
+    scene.camera.fullHalfWidth = glm::tan((scene.camera.fov / 2) * (M_PI / 180)); // A misnomer, but whatever
+    scene.camera.fullHalfHeight = scene.camera.fullHalfWidth * (WIDTH/HEIGHT);
+    scene.camera.fullPixelWidth = (scene.camera.fullHalfWidth * 2) / (WIDTH - 1);
+    scene.camera.fullPixelHeight = (scene.camera.fullHalfHeight * 2) / (HEIGHT - 1);
+
+    scene.camera.previewHalfWidth = glm::tan((scene.camera.fov / 2) * (M_PI / 180)); // A misnomer, but whatever
+    scene.camera.previewHalfHeight = scene.camera.previewHalfWidth * (PREVIEW_WIDTH/PREVIEW_HEIGHT);
+    scene.camera.previewPixelWidth = (scene.camera.previewHalfWidth * 2) / (PREVIEW_WIDTH - 1);
+    scene.camera.previewPixelHeight = (scene.camera.previewHalfHeight * 2) / (PREVIEW_HEIGHT - 1);
+
+    scene.camera.setPreview(false);
 
     // Move camera
     vec3 cameraPos{d["camera"]["x"].GetFloat(), d["camera"]["y"].GetFloat(), d["camera"]["z"].GetFloat()};
@@ -178,19 +197,6 @@ int main(int argc, char *argv[]) {
 
     // Test Uniform Grid Creation
     printf("Created %ix%ix%i uniform grid\n", grid.dimensions.x, grid.dimensions.y, grid.dimensions.z);
-    // for (int i = 0; i < grid.dimensions.x; i++) {
-    //     std::cout << i << std::endl;
-    //     for (int j = 0; j < grid.dimensions.y; j++) {
-    //         std::cout << "\t" << j << std::endl;
-    //         for (int k = 0; k < grid.dimensions.z; k++) {
-    //             // std::cout << "\t\t" << k << ": " << grid.at(i, j, k).size() << std::endl;
-    //             std::cout << "\t\t" << k << std::endl;
-    //             for (auto &o : grid.at(i, j, k)) {
-    //                 std::cout << "\t\t\t" << o << std::endl;
-    //             }
-    //         }
-    //     }
-    // }
     std::cout << objs_placed << " objects placed into grid" << std::endl;
 
     // Anti-Aliasing
@@ -198,22 +204,24 @@ int main(int argc, char *argv[]) {
 
     // Pixel buffer
     Uint32 *pixels = new Uint32[WIDTH*HEIGHT];
+    Uint32 *previewPixels = new Uint32[PREVIEW_WIDTH*PREVIEW_HEIGHT];
 
     // Set up initial camera angle
     float camera_theta = glm::atan(scene.camera.dir.z, scene.camera.dir.x);
     float camera_phi = glm::atan(glm::sqrt((scene.camera.dir.x*scene.camera.dir.x) + (scene.camera.dir.z*scene.camera.dir.z))/ scene.camera.dir.y);
     scene.camera.setAngle(camera_theta, camera_phi);
 
-    // Render initial scene
-    render(pixels, scene, grid);
+    // Render initial scene preview
+    scene.camera.setPreview(true);
+    render(previewPixels, scene, grid);
 
-    if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
+    if (SDL_UpdateTexture(previewTexture, NULL, previewPixels, PREVIEW_WIDTH * sizeof(Uint32)) < 0) {
         std::cout << "ERROR: " << SDL_GetError() << std::endl;
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
+    if (SDL_RenderCopy(renderer, previewTexture, NULL, NULL) < 0) {
         std::cout << "ERROR: " << SDL_GetError() << std::endl;
     }
     SDL_RenderPresent(renderer);
@@ -223,8 +231,10 @@ int main(int argc, char *argv[]) {
     glm::vec3 move{0.0, 0.0, 0.0};
     float min_phi = M_PI/4;
     float max_phi = 5 * M_PI/8;
-    float move_speed = 5.0;
+    float move_speed = 10.0;
     bool rendering = false;
+    bool rendering_preview = true;
+    int AA = scene.AA;
     bool quit = false;
     while (!quit) {
         // Render picture if move has changed
@@ -240,23 +250,38 @@ int main(int argc, char *argv[]) {
 
             std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
 
-            render(pixels, scene, grid);
-
-            if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
-                std::cout << "ERROR: " << SDL_GetError() << std::endl;
+            scene.camera.setPreview(rendering_preview);
+            if (rendering_preview) {
+                scene.AA = 1;
+                render(previewPixels, scene, grid);
+                if (SDL_UpdateTexture(previewTexture, NULL, previewPixels, PREVIEW_WIDTH * sizeof(Uint32)) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_RenderClear(renderer);
+                if (SDL_RenderCopy(renderer, previewTexture, NULL, NULL) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
+            } else {
+                scene.AA = AA;
+                render(pixels, scene, grid);
+                if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_RenderClear(renderer);
+                if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
             }
 
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-            SDL_RenderClear(renderer);
-            if (SDL_RenderCopy(renderer, texture, NULL, NULL) < 0) {
-                std::cout << "ERROR: " << SDL_GetError() << std::endl;
-            }
             SDL_RenderPresent(renderer);
 
             move.x = 0.0;
             move.y = 0.0;
             move.z = 0.0;
             rendering = false;
+            rendering_preview = true;
         }
 
         // Poll events
@@ -285,7 +310,7 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_LEFT:
-                            camera_theta -= M_PI/4;
+                            camera_theta -= M_PI/8;
                             rendering = true;
                             break;
                         case SDLK_DOWN:
@@ -293,9 +318,12 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_RIGHT:
-                            camera_theta += M_PI/4;
+                            camera_theta += M_PI/8;
                             rendering = true;
                             break;
+                        case SDLK_SPACE:
+                            rendering = true;
+                            rendering_preview = false;
                     }
                     break;
                 case SDL_QUIT:

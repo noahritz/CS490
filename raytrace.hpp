@@ -43,18 +43,35 @@ public:
     glm::vec3 origin;
     glm::vec3 dir;
     float fov;
-    const int WIDTH;
-    const int HEIGHT;
+    int WIDTH;
+    int HEIGHT;
     float aspectRatio;
     float halfWidth;
     float halfHeight;
-    float pixelHeight;
     float pixelWidth;
+    float pixelHeight;
+
+    int FULL_WIDTH;
+    int FULL_HEIGHT;
+    float fullHalfWidth;
+    float fullHalfHeight;
+    float fullPixelWidth;
+    float fullPixelHeight;
+
+    int PREVIEW_WIDTH;
+    int PREVIEW_HEIGHT;
+    float previewHalfWidth;
+    float previewHalfHeight;
+    float previewPixelWidth;
+    float previewPixelHeight;
+
+    bool preview;
 
     // Constructor
     Camera();
     Camera(int w, int h, float FOV);
 
+    void setPreview(bool b);
     void setView(float FOV);
     void move(const glm::vec3 pos, const glm::vec3 point);
     void translate(const glm::vec3 move_by);

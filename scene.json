@@ -1,7 +1,7 @@
 {
     "AA": 1,
     "camera": {
-        "x": 50.0,
+        "x": 40.0,
         "y": 4.0,
         "z": 95.0,
         "toX": 0.0,
@@ -346,8 +346,8 @@
             "specular": 0.0
         },
         {
-            "lambert": 0.0,
-            "specular": 1.0
+            "lambert": 0.02,
+            "specular": 0.98
         }
     ]
 }
