@@ -26,19 +26,20 @@ Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0) 
 };
 
 // Intersect Ray with a scene
-Intersection Ray::intersectScene(const std::vector<Shape*>& objects) const {
+Intersection Ray::intersectObjects(const std::vector<Shape*>& objects) const {
     Intersection collision;
 
     float t = 10000.0;
     float t_test;
     
     for (Shape *o : objects) {
-        if (o->intersect(*this, t_test) && t_test < t) {
+        if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
             t = t_test;
             collision.hit = true;
             collision.obj = o;
             collision.point = origin + (vector * t);
             collision.t = t;
+            if (t <= 0) std::cout << "t = " << t << std::endl;
         }
     }
 
@@ -141,7 +142,7 @@ vec3 Camera::rightVector() const {
     return glm::normalize(glm::cross(glm::normalize(dir), vec3{0.0, 1.0, 0.0}));
 }
 
-vec3 Camera::upVector(vec3 &right) const {
+vec3 Camera::upVector(vec3 right) const {
     return glm::normalize(glm::cross(glm::normalize(dir), right));
 }
 
@@ -151,7 +152,8 @@ Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) const {
     Ray light_ray = Ray{point, glm::normalize(position - point)};
 
-    Intersection intersect = light_ray.intersectScene(objects);
+    Intersection intersect = light_ray.intersectObjects(objects);
+    // if (intersect.hit && glm::distance(position, intersect.point) < glm::distance(position, point)) {
     if (intersect.hit && glm::distance(point, intersect.point) < glm::distance(point, position)) {
         return false;
     }
@@ -290,9 +292,9 @@ vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& 
     }
 
     // Traverse grid
-    Intersection collision = ray.intersectScene(objects);
+    Intersection collision = ray.intersectObjects(objects);
     while (true) {
-        collision = ray.intersectScene(grid.at(current_cell.x, current_cell.y, current_cell.z));
+        collision = ray.intersectObjects(grid.at(current_cell.x, current_cell.y, current_cell.z));
 
         Uint8 k =   ((next_crossing_t.x < next_crossing_t.y) << 2) + 
                     ((next_crossing_t.x < next_crossing_t.z) << 1) + 

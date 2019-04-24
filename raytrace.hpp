@@ -21,7 +21,7 @@ public:
     glm::vec3 invdir;
     int depth;
 
-    Intersection intersectScene(const std::vector<Shape*>& objects) const;
+    Intersection intersectObjects(const std::vector<Shape*>& objects) const;
     bool intersectBox(const glm::vec3 min, const glm::vec3 max, float &tmin, float &tmax) const;
 
 };
@@ -77,7 +77,7 @@ public:
     void translate(const glm::vec3 move_by);
     void setAngle(const float theta, const float phi);
     glm::vec3 rightVector() const;
-    glm::vec3 upVector(glm::vec3 &right) const;
+    glm::vec3 upVector(glm::vec3 right) const;
 
 };
 

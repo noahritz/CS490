@@ -10,6 +10,7 @@
 #include "rapidjson/document.h"
 
 #include "raytrace.hpp"
+#include "loader.hpp"
 
 // const int PREVIEW_WIDTH = 128, PREVIEW_HEIGHT = 96;
 const int PREVIEW_WIDTH = 160, PREVIEW_HEIGHT = 120;
@@ -140,6 +141,19 @@ int main(int argc, char *argv[]) {
         scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
     }
 
+    // Get object models from json document
+    glm::vec3 model_color, model_location;
+    for (auto &m : d["objects"]["models"].GetArray()) {
+        model_color = vec3{m["r"].GetFloat(), m["g"].GetFloat(), m["b"].GetFloat()};
+        model_location = vec3{m["x"].GetFloat(), m["y"].GetFloat(), m["z"].GetFloat()};
+        load(   scene.objects, m["filename"].GetString(),
+                m["scale"].GetFloat(),
+                model_location,
+                model_color,
+                d["materials"][m["material"].GetInt()]["lambert"].GetFloat(),
+                d["materials"][m["material"].GetInt()]["specular"].GetFloat());
+    }
+
     // Get scene lights from json document
     i = 0;
     for (auto &l : d["lights"].GetArray()) {
@@ -149,7 +163,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Create grid
-    float delta = 3.0;
+    float delta = 0.25;
     glm::vec3 grid_size = scene_max - scene_min;
     float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
     Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
@@ -232,6 +246,7 @@ int main(int argc, char *argv[]) {
     float min_phi = M_PI/4;
     float max_phi = 5 * M_PI/8;
     float move_speed = 10.0;
+    bool moving_vertical = false;
     bool rendering = false;
     bool rendering_preview = true;
     int AA = scene.AA;
@@ -242,7 +257,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Rendering" << std::endl;
 
             // Move camera
-            move.y = 0.0;
+            if (!moving_vertical) move.y = 0.0;
             scene.camera.translate(move * move_speed);
 
             camera_phi = glm::clamp(camera_phi, min_phi, max_phi);
@@ -280,6 +295,7 @@ int main(int argc, char *argv[]) {
             move.x = 0.0;
             move.y = 0.0;
             move.z = 0.0;
+            moving_vertical = false;
             rendering = false;
             rendering_preview = true;
         }
@@ -305,8 +321,18 @@ int main(int argc, char *argv[]) {
                             move += glm::normalize(scene.camera.rightVector());
                             rendering = true;
                             break;
+                        case SDLK_q:
+                            move += glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
+                            moving_vertical = true;
+                            rendering = true;
+                            break;
+                        case SDLK_e:
+                            move -= glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
+                            moving_vertical = true;
+                            rendering = true;
+                            break;
                         case SDLK_UP:
-                            camera_phi -= M_PI/8;
+                            camera_phi -= M_PI/16;
                             rendering = true;
                             break;
                         case SDLK_LEFT:
@@ -314,7 +340,7 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_DOWN:
-                            camera_phi += M_PI/8;
+                            camera_phi += M_PI/16;
                             rendering = true;
                             break;
                         case SDLK_RIGHT:
