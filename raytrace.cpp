@@ -33,13 +33,22 @@ Intersection Ray::intersectObjects(const std::vector<Shape*>& objects) const {
     float t_test;
     
     for (Shape *o : objects) {
-        if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
-            t = t_test;
-            collision.hit = true;
-            collision.obj = o;
-            collision.point = origin + (vector * t);
-            collision.t = t;
-            if (t <= 0) std::cout << "t = " << t << std::endl;
+        if (o->model) {
+            #pragma omp critical
+            {
+                if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
+                    t = t_test;
+                    collision = o->intersected_tri;
+                }
+            }
+        } else {
+            if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
+                t = t_test;
+                collision.hit = true;
+                collision.obj = o;
+                collision.point = origin + (vector * t);
+                collision.t = t;
+            }
         }
     }
 
@@ -153,7 +162,6 @@ bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) 
     Ray light_ray = Ray{point, glm::normalize(position - point)};
 
     Intersection intersect = light_ray.intersectObjects(objects);
-    // if (intersect.hit && glm::distance(position, intersect.point) < glm::distance(position, point)) {
     if (intersect.hit && glm::distance(point, intersect.point) < glm::distance(point, position)) {
         return false;
     }
@@ -201,7 +209,6 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
 
     // Create viewing ray
     Ray ray;
-    
 
     auto start = std::chrono::high_resolution_clock::now();
     auto recent = start;
@@ -292,7 +299,7 @@ vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& 
     }
 
     // Traverse grid
-    Intersection collision = ray.intersectObjects(objects);
+    Intersection collision;
     while (true) {
         collision = ray.intersectObjects(grid.at(current_cell.x, current_cell.y, current_cell.z));
 

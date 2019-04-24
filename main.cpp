@@ -17,6 +17,7 @@ const int PREVIEW_WIDTH = 160, PREVIEW_HEIGHT = 120;
 const int WIDTH = 640, HEIGHT = 480;
 // const int WIDTH = 1280, HEIGHT = 720;
 
+
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << std::endl;
@@ -163,15 +164,23 @@ int main(int argc, char *argv[]) {
     }
 
     // Create grid
-    float delta = 0.25;
-    glm::vec3 grid_size = scene_max - scene_min;
-    float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
-    Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
-    for (int i = 0; i < 3; i++) {
-        if (grid.dimensions[i] <= 0) {
-            grid.dimensions[i] = 1;
-        }
-    }
+
+    // float delta = 0.25;
+    // glm::vec3 grid_size = scene_max - scene_min;
+    // float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
+    // Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
+    // for (int i = 0; i < 3; i++) {
+    //     if (grid.dimensions[i] <= 0) {
+    //         grid.dimensions[i] = 1;
+    //     }
+    // }
+
+
+    glm::vec3 grid_size{100.0, 100.0, 100.0};
+    glm::ivec3 dimensions{5, 2, 5};
+    glm::vec3 min{0.0, 0.0, 0.0};
+    glm::vec3 max{100.0, 100.0, 100.0};
+    Grid grid{grid_size, dimensions, min, max};
     
     // Fill grid with triangles
 

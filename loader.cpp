@@ -7,12 +7,15 @@ using std::ifstream;
 using std::string;
 using std::stringstream;
 
-void load(std::vector<Shape *>& triangles, std::string filename, float scale, glm::vec3 location, glm::vec3 color, float lambert, float specular) {
+void load(std::vector<Shape *>& objects, std::string filename, float scale, glm::vec3 location, glm::vec3 color, float lambert, float specular) {
     string line;
     string type;
     string v1, v2, v3;
     int ind1, ind2, ind3;
 
+    Model *model = new Model();
+    glm::vec3 min = {10000.0, 10000.0, 10000.0};
+    glm::vec3 max = {-10000.0, -10000.0, -10000.0};
 
     ifstream f;
     f.open(filename);
@@ -25,6 +28,8 @@ void load(std::vector<Shape *>& triangles, std::string filename, float scale, gl
             linestream >> v.x >> v.y >> v.z;
             v *= scale;
             v += location;
+            min = glm::min(v, min);
+            max = glm::max(v, max);
             vertices.push_back(v);
         } else if (type == "f") {
             linestream >> v1 >> v2 >> v3;
@@ -35,9 +40,14 @@ void load(std::vector<Shape *>& triangles, std::string filename, float scale, gl
             ind2--;
             ind3--;
             Triangle *tri = new Triangle{vertices[ind1], vertices[ind2], vertices[ind3], color, lambert, specular};
-            triangles.push_back(tri);
+            model->triangles.push_back(tri);
+            // objects.push_back(tri);
         } else {
             continue;
         }
     }
+
+    model->minimum = min;
+    model->maximum = max;
+    objects.push_back(model);
 }

@@ -6,7 +6,7 @@
 #include <glm/vec3.hpp>
 #include "geometry.hpp"
 
-void load(std::vector<Shape *>& triangles, std::string filename, glm::vec3 color, float lambert, float specular);
+void load(std::vector<Shape *>& objects, std::string filename, glm::vec3 color, float lambert, float specular);
 
 #include "loader.cpp"
 

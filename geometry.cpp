@@ -6,9 +6,9 @@
 
 /* SHAPE */
 
-Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}) {}
-Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0) {}
-Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec) {}
+Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}), model(false) {}
+Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0), model(false) {}
+Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec), model(false) {}
 Shape::~Shape() {}
 
 glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const {
@@ -77,7 +77,7 @@ bool Sphere::solveQuadratic (const float &a, const float &b, const float &c, flo
 }
 
 // from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/minimal-ray-tracer-rendering-spheres
-bool Sphere::intersect(const Ray &ray, float &t) const {
+bool Sphere::intersect(const Ray &ray, float &t) {
     float t0, t1;
 
     glm::vec3 L = ray.origin - center;
@@ -127,8 +127,8 @@ Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col, floa
     Shape(col, lam, spec), v0(p0), v1(p1), v2(p2) {}
 
 // From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
-bool Triangle::intersect(const Ray& ray, float &t) const {
-    // TODO
+bool Triangle::intersect(const Ray& ray, float &t) {
+
     glm::vec3 AB = v1 - v0;
     glm::vec3 AC = v2 - v0;
     glm::vec3 cramer_p = glm::cross(ray.vector, AC);
@@ -159,7 +159,6 @@ bool Triangle::intersect(const Ray& ray, float &t) const {
 }
 
 glm::vec3 Triangle::normal(const glm::vec3& point) const {
-    // TODO
     glm::vec3 a = v1 - v0;
     glm::vec3 b = v2 - v0;
 
@@ -172,4 +171,51 @@ glm::vec3 Triangle::min() const {
 
 glm::vec3 Triangle::max() const {
     return glm::vec3{std::max({v0.x, v1.x, v2.x}), std::max({v0.y, v1.y, v2.y}), std::max({v0.z, v1.z, v2.z})};
+}
+
+/* MODEL */
+Model::Model() {model = true;};
+
+bool Model::intersect(const Ray& ray, float &t) {
+    float ti, tj; // Dummy variables for the box intersection
+    if (!ray.intersectBox(minimum, maximum, ti, tj)) {
+        return false;
+    }
+
+    float t_model = 10000.0;
+    float t_test;
+    intersected_tri.hit = false;
+    
+    Intersection temp;
+    temp.hit = false;
+
+    for (auto &tri : triangles) {
+        if (tri->intersect(ray, t_test) && t_test < t_model && t_test >= 0) {
+            t_model = t_test;
+            temp.hit = true;
+            temp.obj = tri;
+            temp.point = ray.origin + (ray.vector * t_model);
+            temp.t = t_model;
+        }
+    }
+
+    if (temp.hit) {
+        t = t_model;
+        intersected_tri = temp;
+        return true;
+    }
+
+    return false;
+}
+
+glm::vec3 Model::normal(const glm::vec3 &point) const {
+    return intersected_tri.obj->normal(point);
+}
+
+glm::vec3 Model::min() const {
+    return minimum;
+}
+
+glm::vec3 Model::max() const {
+    return maximum;
 }
