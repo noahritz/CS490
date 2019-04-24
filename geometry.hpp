@@ -12,7 +12,7 @@ public:
     float lambert;
     float specular;
     bool model;
-    Intersection intersected_tri;
+    Intersection intersected_tri[4];
 
     Shape();
     Shape(glm::vec3 color);

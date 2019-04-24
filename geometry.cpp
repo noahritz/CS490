@@ -184,24 +184,22 @@ bool Model::intersect(const Ray& ray, float &t) {
 
     float t_model = 10000.0;
     float t_test;
-    intersected_tri.hit = false;
-    
-    Intersection temp;
-    temp.hit = false;
 
+    int thread = omp_get_thread_num();
+    intersected_tri[thread].hit = false;
+    
     for (auto &tri : triangles) {
         if (tri->intersect(ray, t_test) && t_test < t_model && t_test >= 0) {
             t_model = t_test;
-            temp.hit = true;
-            temp.obj = tri;
-            temp.point = ray.origin + (ray.vector * t_model);
-            temp.t = t_model;
+            intersected_tri[thread].hit = true;
+            intersected_tri[thread].obj = tri;
+            intersected_tri[thread].point = ray.origin + (ray.vector * t_model);
+            intersected_tri[thread].t = t_model;
         }
     }
 
-    if (temp.hit) {
+    if (intersected_tri[thread].hit) {
         t = t_model;
-        intersected_tri = temp;
         return true;
     }
 
@@ -209,7 +207,7 @@ bool Model::intersect(const Ray& ray, float &t) {
 }
 
 glm::vec3 Model::normal(const glm::vec3 &point) const {
-    return intersected_tri.obj->normal(point);
+    return intersected_tri[omp_get_thread_num()].obj->normal(point);
 }
 
 glm::vec3 Model::min() const {

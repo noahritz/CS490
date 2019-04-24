@@ -33,17 +33,11 @@ Intersection Ray::intersectObjects(const std::vector<Shape*>& objects) const {
     float t_test;
     
     for (Shape *o : objects) {
-        if (o->model) {
-            #pragma omp critical
-            {
-                if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
-                    t = t_test;
-                    collision = o->intersected_tri;
-                }
-            }
-        } else {
-            if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
-                t = t_test;
+        if (o->intersect(*this, t_test) && t_test < t && t_test >= 0) {
+            t = t_test;
+            if (o->model) {
+                collision = o->intersected_tri[omp_get_thread_num()];
+            } else {
                 collision.hit = true;
                 collision.obj = o;
                 collision.point = origin + (vector * t);
