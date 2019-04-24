@@ -20,7 +20,7 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
     if (lambert) {
         for (auto &l : lights) {
 
-            if (l->visible(point + (norm * 0.01f), objects)) {
+            if (l->visible(point + (norm * 0.01f), objects, grid, norm)) {
                 float contribution = glm::dot(glm::normalize(l->position - point), norm);
                 if (contribution > 0) {
                     lambert_color += (l->color * contribution);

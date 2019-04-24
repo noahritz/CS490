@@ -8,6 +8,7 @@
 
 class Shape;
 class Intersection;
+class Grid;
 
 class Ray {
 public:
@@ -89,7 +90,7 @@ public:
 
     Light(glm::vec3 p, glm::vec3 c);
 
-    bool visible(const glm::vec3& point, const std::vector<Shape*>& objects) const;
+    bool visible(const glm::vec3& point, const std::vector<Shape*>& objects, Grid &grid, glm::vec3& normal) const;
 
 };
 

@@ -84,6 +84,21 @@ public:
     glm::vec3 max() const;
 };
 
+class TexturedRectangle : public Shape {
+public:
+
+    SDL_Texture *texture;
+
+//     boolintersect(const Ray& ray, float &t);
+//     glm::vec3 normal(const glm::vec3& point) const;
+//     glm::vec3 min() const;
+//     glm::vec3 max() const;
+
+// private:
+//     Triangle tri1;
+//     Triangle tri2;
+};
+
 #include "geometry.cpp"
 
 #endif

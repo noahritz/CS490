@@ -152,8 +152,13 @@ vec3 Camera::upVector(vec3 right) const {
 /* LIGHT CLASS */
 Light::Light(glm::vec3 p, glm::vec3 c) : position{p}, color{c} {};
 
-bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) const {
+bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects, Grid &grid, vec3& normal) const {
     Ray light_ray = Ray{point, glm::normalize(position - point)};
+
+    // Return false if light is behind the point
+    if (glm::acos(glm::dot(light_ray.vector, normal)) > M_PI/2.0) {
+        return false;
+    }
 
     Intersection intersect = light_ray.intersectObjects(objects);
     if (intersect.hit && glm::distance(point, intersect.point) < glm::distance(point, position)) {
@@ -162,6 +167,71 @@ bool Light::visible(const glm::vec3& point, const std::vector<Shape*>& objects) 
 
     return true;
 }
+
+// NOTE: This theoretically should be faster, as it uses grid traversal to check for light visibility. With 3 lights in the room it's actually slower
+// bool Light::visible(const vec3& point, const std::vector<Shape*>& objects, Grid &grid, vec3& normal) const {
+//     Ray light_ray = Ray{point, glm::normalize(position - point)};
+
+//     // Return false if light is behind the point
+//     if (glm::acos(glm::dot(light_ray.vector, normal)) > M_PI/2.0) {
+//         return false;
+//     }
+
+//     float t_min, t_max;
+//     if (!light_ray.intersectBox(grid.min, grid.max, t_min, t_max)) {
+//         return false;
+//     }
+
+//     // Setup traversal
+//     vec3 cell_dimensions = (grid.size) / (vec3) grid.dimensions;
+
+//     glm::vec3 ray_orig_cell, delta_t, next_crossing_t;
+//     glm::ivec3 step, exit, current_cell;
+//     for (int i = 0; i < 3; i++) {
+//         ray_orig_cell[i] = (light_ray.origin[i] + (light_ray.vector[i] * t_min)) - grid.min[i];
+//         current_cell[i] = glm::clamp((int) glm::floor(ray_orig_cell[i] / cell_dimensions[i]), 0, grid.dimensions[i] - 1);
+//         if (light_ray.vector[i] < 0) {
+//             delta_t[i] = -cell_dimensions[i] * light_ray.invdir[i];
+//             next_crossing_t[i] = t_min + (current_cell[i] * cell_dimensions[i] - ray_orig_cell[i]) * light_ray.invdir[i];
+//             exit[i] = -1;
+//             step[i] = -1;
+//         } else {
+//             delta_t[i] = cell_dimensions[i] * light_ray.invdir[i];
+//             next_crossing_t[i] = t_min + ((current_cell[i] + 1) * cell_dimensions[i] - ray_orig_cell[i]) * light_ray.invdir[i];
+//             exit[i] = grid.dimensions[i];
+//             step[i] = 1;
+//         }
+//     }
+
+//     // Traverse grid
+//     Intersection collision;
+//     while (true) {
+//         collision = light_ray.intersectObjects(grid.at(current_cell.x, current_cell.y, current_cell.z));
+
+//         Uint8 k =   ((next_crossing_t.x < next_crossing_t.y) << 2) + 
+//                     ((next_crossing_t.x < next_crossing_t.z) << 1) + 
+//                     ((next_crossing_t.y < next_crossing_t.z));
+//         static const Uint8 map[8] = {2, 1, 2, 1, 2, 2, 0, 0};
+//         Uint8 axis = map[k];
+
+//         if (collision.t < next_crossing_t[axis])
+//             break;
+
+//         current_cell[axis] += step[axis];
+
+//         if (current_cell[axis] == exit[axis])
+//             break;
+
+//         next_crossing_t[axis] += delta_t[axis];
+
+//         if (collision.hit && glm::distance(point, collision.point) < glm::distance(point, position)) {
+//             return false;
+//         }
+//     }
+
+//     return true;
+
+// }
 
 /* SCENE CLASS */
 Scene::Scene(int w, int h, float fov, int total_objects, int total_lights): camera(Camera{w, h, fov}), objects(std::vector<Shape*>{total_objects}), lights(std::vector<Light*>{total_lights}) {}
@@ -348,3 +418,4 @@ void fillBuffer(Uint32 *buffer, std::vector<vec3> pixels, int size) {
         buffer[i] = vecToHex(pixels[i]);
     }
 }
+

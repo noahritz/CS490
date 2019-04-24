@@ -341,19 +341,19 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_UP:
-                            camera_phi -= M_PI/16;
+                            camera_phi -= M_PI/16.0;
                             rendering = true;
                             break;
                         case SDLK_LEFT:
-                            camera_theta -= M_PI/8;
+                            camera_theta -= M_PI/8.0;
                             rendering = true;
                             break;
                         case SDLK_DOWN:
-                            camera_phi += M_PI/16;
+                            camera_phi += M_PI/16.0;
                             rendering = true;
                             break;
                         case SDLK_RIGHT:
-                            camera_theta += M_PI/8;
+                            camera_theta += M_PI/8.0;
                             rendering = true;
                             break;
                         case SDLK_SPACE:
