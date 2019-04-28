@@ -23,7 +23,7 @@ public:
 
     virtual bool intersect(const Ray& ray, float &t) = 0;
     virtual glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const;
-    virtual glm::vec3 normal(const glm::vec3& point) const = 0;
+    virtual glm::vec3 normal(const glm::vec3& point, const Ray& ray) const = 0;
     virtual glm::vec3 min() const = 0;
     virtual glm::vec3 max() const = 0;
 
@@ -42,7 +42,7 @@ public:
     Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec);
 
     bool intersect(const Ray& ray, float &t);
-    glm::vec3 normal(const glm::vec3& point) const;
+    glm::vec3 normal(const glm::vec3& point, const Ray& ray) const;
     glm::vec3 min() const;
     glm::vec3 max() const;
 
@@ -64,7 +64,7 @@ public:
     Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 col, float lam, float spec);
 
     bool intersect(const Ray& ray, float &t);
-    glm::vec3 normal(const glm::vec3& point) const;
+    glm::vec3 normal(const glm::vec3& point, const Ray& ray) const;
     glm::vec3 min() const;
     glm::vec3 max() const;
 
@@ -92,7 +92,7 @@ public:
 
     Model();
     bool intersect(const Ray& ray, float &t);
-    glm::vec3 normal(const glm::vec3& point) const;
+    glm::vec3 normal(const glm::vec3& point, const Ray& ray) const;
     glm::vec3 min() const;
     glm::vec3 max() const;
 

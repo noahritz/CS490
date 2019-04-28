@@ -18,7 +18,7 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
     glm::vec3 _color, lambert_color, specular_color;
     lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
 
-    glm::vec3 norm = this->normal(point);
+    glm::vec3 norm = this->normal(point, ray);
 
     if (lambert) {
         for (auto &l : lights) {
@@ -108,7 +108,7 @@ bool Sphere::intersect(const Ray &ray, float &t) {
     return true;
 }
 
-glm::vec3 Sphere::normal(const glm::vec3& point) const {
+glm::vec3 Sphere::normal(const glm::vec3& point, const Ray& ray) const {
     return glm::normalize(point - center);
 }
 
@@ -138,7 +138,7 @@ bool Triangle::intersect(const Ray& ray, float &t) {
     float det = glm::dot(AB, cramer_p);
     
     // Disregard triangle if triangle is backfacing
-    if (det < 0.0000001) {
+    if (fabs(det) < 0.0000001) {
         return false;
     }
 
@@ -161,11 +161,16 @@ bool Triangle::intersect(const Ray& ray, float &t) {
     return true;
 }
 
-glm::vec3 Triangle::normal(const glm::vec3& point) const {
+glm::vec3 Triangle::normal(const glm::vec3& point, const Ray& ray) const {
     glm::vec3 a = v1 - v0;
     glm::vec3 b = v2 - v0;
 
-    return glm::normalize(glm::cross(a, b));
+    glm::vec3 _normal = glm::cross(a, b);
+    if (glm::dot(_normal, ray.vector) < 0) {
+        return glm::normalize(_normal);
+    } else {
+        return glm::normalize(glm::cross(b, a));
+    }
 }
 
 glm::vec3 Triangle::min() const {
@@ -209,8 +214,8 @@ bool Model::intersect(const Ray& ray, float &t) {
     return false;
 }
 
-glm::vec3 Model::normal(const glm::vec3 &point) const {
-    return intersected_tri[omp_get_thread_num()].obj->normal(point);
+glm::vec3 Model::normal(const glm::vec3 &point, const Ray& ray) const {
+    return intersected_tri[omp_get_thread_num()].obj->normal(point, ray);
 }
 
 glm::vec3 Model::min() const {
@@ -234,7 +239,7 @@ bool TexturedTriangle::intersect(const Ray& ray, float &t) {
     float det = glm::dot(AB, cramer_p);
     
     // Disregard triangle if triangle is backfacing
-    if (det < 0.0000001) {
+    if (fabs(det) < 0.0000001) {
         return false;
     }
 
@@ -267,7 +272,7 @@ glm::vec3 TexturedTriangle::surface(const Ray& ray, const glm::vec3& point, cons
     glm::vec3 _color, lambert_color, specular_color;
     lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
 
-    glm::vec3 norm = this->normal(point);
+    glm::vec3 norm = this->normal(point, ray);
 
     if (lambert) {
         for (auto &l : lights) {

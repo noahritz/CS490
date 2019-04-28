@@ -29,7 +29,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "material": 0
+                "material": 1
             },
             {
                 "x": 40,
@@ -45,7 +45,7 @@
         ],
         "models": [
             {
-                "filename": "models/sphere.obj",
+                "filename": "models/tetrahedron.obj",
                 "scale": 4.0,
                 "x": 30.0,
                 "y": 5.0,
@@ -77,6 +77,30 @@
                     "x": 0.1,
                     "y": 0,
                     "z": 0.1
+                },
+                "texture": 0,
+                "material": 0
+            },
+            {
+                "topleft": {
+                    "x": 48,
+                    "y": 5,
+                    "z": 50
+                },
+                "topright": {
+                    "x": 52,
+                    "y": 5,
+                    "z": 50
+                },
+                "bottomleft": {
+                    "x": 48,
+                    "y": 0,
+                    "z": 50
+                },
+                "bottomright": {
+                    "x": 52,
+                    "y": 0,
+                    "z": 50
                 },
                 "texture": 0,
                 "material": 0
