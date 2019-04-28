@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <glm/vec3.hpp>
 #include "rapidjson/document.h"
+#include "CImg.h"
 
 class Shape;
 class Intersection;
@@ -100,6 +101,7 @@ public:
     Camera camera;
     std::vector<Shape*> objects;
     std::vector<Light*> lights;
+    std::vector<cimg_library::CImg<float>> textures;
     int AA;
 
     Scene(int w, int h, float fov, int total_objects, int total_lights);

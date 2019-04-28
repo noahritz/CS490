@@ -2,7 +2,10 @@
 #include <glm/exponential.hpp>
 #include <vector>
 #include <algorithm>
+#include "CImg.h"
 #include "geometry.hpp"
+
+using cimg_library::CImg;
 
 /* SHAPE */
 
@@ -216,4 +219,83 @@ glm::vec3 Model::min() const {
 
 glm::vec3 Model::max() const {
     return maximum;
+}
+
+/* TEXTURED RECTANGLE */
+TexturedTriangle::TexturedTriangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, float lam, float spec, CImg<float>& tex, bool bot) :
+    Triangle(p0, p1, p2, glm::vec3{1.0, 1.0, 1.0}, lam, spec), texture(tex), bottom(bot) {
+}
+
+bool TexturedTriangle::intersect(const Ray& ray, float &t) {
+
+    glm::vec3 AB = v1 - v0;
+    glm::vec3 AC = v2 - v0;
+    glm::vec3 cramer_p = glm::cross(ray.vector, AC);
+    float det = glm::dot(AB, cramer_p);
+    
+    // Disregard triangle if triangle is backfacing
+    if (det < 0.0000001) {
+        return false;
+    }
+
+    float inv_det = 1.0 / det;
+
+    glm::vec3 cramer_t = ray.origin - v0;
+    float u = glm::dot(cramer_t, cramer_p) * inv_det;
+    if (u < 0 || u > 1) {
+        return false;
+    }
+
+    glm::vec3 cramer_q = glm::cross(cramer_t, AB);
+    float v = glm::dot(ray.vector, cramer_q) * inv_det;
+    if (v < 0 || (u + v) > 1) {
+        return false;
+    }
+
+    t = glm::dot(AC, cramer_q) * inv_det;
+
+    if (bottom) {
+        UV[omp_get_thread_num()] = (u * glm::vec3{0.0, 0.0, 0.0}) + (v * glm::vec3{0.0, 1.0, 0.0}) + ((1.0f - u - v) * glm::vec3{1.0, 1.0, 0.0});
+    } else {
+        UV[omp_get_thread_num()] = (u * glm::vec3{1.0, 0.0, 0.0}) + (v * glm::vec3{0.0, 0.0, 0.0}) + ((1.0f - u - v) * glm::vec3{1.0, 1.0, 0.0});
+    }
+
+    return true;
+}
+
+glm::vec3 TexturedTriangle::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const {
+    glm::vec3 _color, lambert_color, specular_color;
+    lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
+
+    glm::vec3 norm = this->normal(point);
+
+    if (lambert) {
+        for (auto &l : lights) {
+
+            if (l->visible(point + (norm * 0.01f), objects, grid, norm)) {
+                float contribution = glm::dot(glm::normalize(l->position - point), norm);
+                if (contribution > 0) {
+                    lambert_color += (l->color * contribution);
+                }
+            }
+        }
+
+        // Get texture color
+        glm::ivec3 tex_coord{UV[omp_get_thread_num()] * glm::vec3{texture.width(), texture.height(), 0.0}};
+        glm::vec3 tex_color{texture(tex_coord.x, tex_coord.y, 0, 0), texture(tex_coord.x, tex_coord.y, 0, 1), texture(tex_coord.x, tex_coord.y, 0, 2)};
+        lambert_color *= tex_color/255.0f;
+
+    }
+
+    if (specular) {
+        glm::vec3 reflected_vec = glm::reflect(ray.vector, norm);
+        Ray reflected_ray{point + (reflected_vec * 0.01f), reflected_vec};
+        reflected_ray.depth = ray.depth + 1;
+
+        specular_color = trace(reflected_ray, objects, lights, grid);
+    }
+
+    _color = (lambert_color * lambert) + (specular_color * specular);
+
+    return _color;
 }

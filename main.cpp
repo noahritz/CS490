@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
     /* Create scene */
 
-    int num_objects = d["objects"]["spheres"].Size() + d["objects"]["triangles"].Size();
+    int num_objects = d["objects"]["spheres"].Size() + d["objects"]["triangles"].Size() + (d["objects"]["texturedRectangles"].Size()*2);
     int num_lights = d["lights"].Size();
     int fov = d["camera"]["fov"].GetFloat();
     Scene scene{WIDTH, HEIGHT, fov, num_objects, num_lights};
@@ -133,6 +133,48 @@ int main(int argc, char *argv[]) {
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat()};
         scene.objects[i++] = tri;
+
+        scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
+        scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
+        scene_min.z = std::min({p1.z, p2.z, p3.z, scene_min.z});
+        scene_max.x = std::max({p1.x, p2.x, p3.x, scene_max.x});
+        scene_max.y = std::max({p1.y, p2.y, p3.y, scene_max.y});
+        scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
+    }
+
+    // Load Textures
+    for (auto &t : d["textures"].GetArray()) {
+        scene.textures.push_back(cimg_library::CImg<float>(t.GetString()));
+    }
+
+    // Create textured rectangles
+    for (auto &t : d["objects"]["texturedRectangles"].GetArray()) {
+        // Create Triangle 1
+        p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
+        p2 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
+        p3 = vec3{t["bottomleft"]["x"].GetFloat(), t["bottomleft"]["y"].GetFloat(), t["bottomleft"]["z"].GetFloat()};
+        Triangle *tri1 = new TexturedTriangle{   p1, p2, p3,
+                                        d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        scene.textures[t["texture"].GetInt()], true};
+        scene.objects[i++] = tri1;
+
+        scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
+        scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
+        scene_min.z = std::min({p1.z, p2.z, p3.z, scene_min.z});
+        scene_max.x = std::max({p1.x, p2.x, p3.x, scene_max.x});
+        scene_max.y = std::max({p1.y, p2.y, p3.y, scene_max.y});
+        scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
+
+        // Create Triangle 2
+        p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
+        p2 = vec3{t["topright"]["x"].GetFloat(), t["topright"]["y"].GetFloat(), t["topright"]["z"].GetFloat()};
+        p3 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
+        Triangle *tri2 = new TexturedTriangle{   p1, p2, p3,
+                                        d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        scene.textures[t["texture"].GetInt()], false};
+        scene.objects[i++] = tri2;
 
         scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
         scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
@@ -373,6 +415,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "END" << std::endl;
 
+    SDL_DestroyTexture(texture);
     SDL_DestroyWindow(window);
     SDL_Quit();
 

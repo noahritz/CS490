@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/vec3.hpp>
 #include "raytrace.hpp"
+#include "CImg.h"
 
 class Shape {
 public:
@@ -11,6 +12,7 @@ public:
     glm::vec3 color;
     float lambert;
     float specular;
+
     bool model;
     Intersection intersected_tri[4];
 
@@ -20,10 +22,11 @@ public:
     virtual ~Shape();
 
     virtual bool intersect(const Ray& ray, float &t) = 0;
-    glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const;
+    virtual glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const;
     virtual glm::vec3 normal(const glm::vec3& point) const = 0;
     virtual glm::vec3 min() const = 0;
     virtual glm::vec3 max() const = 0;
+
 
 };
 
@@ -55,7 +58,6 @@ public:
     glm::vec3 v0;
     glm::vec3 v1;
     glm::vec3 v2;
-    // glm::vec3 color;
 
     Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3);
     Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 col);
@@ -66,8 +68,19 @@ public:
     glm::vec3 min() const;
     glm::vec3 max() const;
 
-private:
+};
 
+class TexturedTriangle : public Triangle {
+public:
+
+    bool bottom;
+    glm::vec3 UV[4];
+    cimg_library::CImg<float>& texture;
+
+    TexturedTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float lam, float spec, cimg_library::CImg<float>& tex, bool bot);
+
+    bool intersect(const Ray& ray, float &t) override;
+    glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const override;
 };
 
 class Model : public Shape {
@@ -82,21 +95,7 @@ public:
     glm::vec3 normal(const glm::vec3& point) const;
     glm::vec3 min() const;
     glm::vec3 max() const;
-};
 
-class TexturedRectangle : public Shape {
-public:
-
-    SDL_Texture *texture;
-
-//     boolintersect(const Ray& ray, float &t);
-//     glm::vec3 normal(const glm::vec3& point) const;
-//     glm::vec3 min() const;
-//     glm::vec3 max() const;
-
-// private:
-//     Triangle tri1;
-//     Triangle tri2;
 };
 
 #include "geometry.cpp"

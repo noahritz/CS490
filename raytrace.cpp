@@ -393,24 +393,57 @@ vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& 
     return vec3{0.0, 0.0, 0.0};
 }
 
+float hable(float x)
+{
+    float A = 0.15;
+    float B = 0.50;
+    float C = 0.10;
+    float D = 0.20;
+    float E = 0.02;
+    float F = 0.30;
+
+    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
 void fillBuffer(Uint32 *buffer, std::vector<vec3> pixels, int size) {
-    float maxI = 0.00001;
+    #pragma omp parallel for shared(pixels)
+    for (int i = 0; i < size; i++) {
+        // pixels[i] /= (pixels[i] + 0.25f);
+        for (int j = 0 ; j < 3; j++) {
+            pixels[i][j] = hable(pixels[i][j]);
+        }
+    }
+
+    // float maxI = 0.00001;
+    // float I;
+    // #pragma omp parallel for private(I) shared(maxI, pixels)
+    // for (int i = 0; i < size; i++) {
+    //     I = (0.3 * pixels[i].r) + (0.5 * pixels[i].g) + (0.2 * pixels[i].b);
+    //     #pragma omp critical
+    //     {
+    //         if (I > maxI) {
+    //             maxI = I;
+    //         }
+    //     }
+    // }
+
     float I;
-    #pragma omp parallel for private(I) shared(maxI, pixels)
+    float averageI;
+    #pragma omp parallel for private(I) shared(averageI, pixels)
     for (int i = 0; i < size; i++) {
         I = (0.3 * pixels[i].r) + (0.5 * pixels[i].g) + (0.2 * pixels[i].b);
         #pragma omp critical
         {
-            if (I > maxI) {
-                maxI = I;
-            }
+            averageI += (I / (float) size);
         }
     }
 
-    float mult = 1.0/maxI;
+    // float mult = 1.0/maxI;
+    float mult = 0.5/averageI;
     #pragma omp parallel for shared(pixels)
     for (int i = 0; i < size; i++) {
         pixels[i] *= mult;
+        pixels[i] /= (pixels[i] + 0.65f);
         if (pixels[i].r > 1.0) pixels[i].r = 1.0;
         if (pixels[i].g > 1.0) pixels[i].g = 1.0;
         if (pixels[i].b > 1.0) pixels[i].b = 1.0;
