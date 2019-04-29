@@ -151,13 +151,17 @@ int main(int argc, char *argv[]) {
         scene.textures.push_back(cimg_library::CImg<float>(t.GetString()));
     }
 
+    // Load Camera sprite texture
+    scene.textures.push_back(cimg_library::CImg<float>("textures/Claptrap.bmp"));
+
+
     // Create textured rectangles
     for (auto &t : d["objects"]["texturedRectangles"].GetArray()) {
         // Create Triangle 1
         p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
         p2 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
         p3 = vec3{t["bottomleft"]["x"].GetFloat(), t["bottomleft"]["y"].GetFloat(), t["bottomleft"]["z"].GetFloat()};
-        Triangle *tri1 = new TexturedTriangle{   p1, p2, p3,
+        TexturedTriangle *tri1 = new TexturedTriangle{   p1, p2, p3,
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
@@ -176,7 +180,7 @@ int main(int argc, char *argv[]) {
         p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
         p2 = vec3{t["topright"]["x"].GetFloat(), t["topright"]["y"].GetFloat(), t["topright"]["z"].GetFloat()};
         p3 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
-        Triangle *tri2 = new TexturedTriangle{   p1, p2, p3,
+        TexturedTriangle *tri2 = new TexturedTriangle{   p1, p2, p3,
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
@@ -207,6 +211,33 @@ int main(int argc, char *argv[]) {
                 d["materials"][m["material"].GetInt()]["IoR"].GetFloat());
 
     }
+
+    // Create camera sprite billboard
+    // Create Triangle 1
+    glm::vec3 right = scene.camera.rightVector();
+    glm::vec3 up = scene.camera.upVector(right);
+    //// Bottom Right
+    p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+    //// Top Left
+    p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+    //// Bottom Left
+    p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+    TexturedTriangle *tri1 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], true};
+    scene.objects.push_back(tri1);
+
+    // Create Triangle 2
+    //// Bottom Right
+    p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+    //// Top Right
+    p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+    //// Top Left
+    p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+    TexturedTriangle *tri2 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], false};
+
+    scene.objects.push_back(tri2);
+
+    scene.camera.sprite_top = tri1;
+    scene.camera.sprite_bottom = tri2;
 
     // Get scene lights from json document
     i = 0;
@@ -250,6 +281,11 @@ int main(int argc, char *argv[]) {
         obj_max = o->max();
         cell_min = (glm::ivec3) glm::floor(obj_min / cell_size);
         cell_max = (glm::ivec3) glm::floor(obj_max / cell_size);
+
+        if (o == scene.camera.sprite_top || o == scene.camera.sprite_bottom) {
+            cell_min = {0, 0, 0};
+            cell_max = dimensions - 1;
+        }
 
         // Ensure objects on the end are placed in the grid
         for (int i = 0; i < 3; i++) {
@@ -306,7 +342,7 @@ int main(int argc, char *argv[]) {
 
     glm::vec3 move{0.0, 0.0, 0.0};
     float min_phi = M_PI/4;
-    float max_phi = 5 * M_PI/8;
+    float max_phi = 6 * M_PI/8;
     float move_speed = 10.0;
     bool moving_vertical = false;
     bool rendering = false;
@@ -318,6 +354,7 @@ int main(int argc, char *argv[]) {
         if (rendering) {
             std::cout << "Rendering" << std::endl;
 
+
             // Move camera
             if (!moving_vertical) move.y = 0.0;
             scene.camera.translate(move * move_speed);
@@ -326,6 +363,29 @@ int main(int argc, char *argv[]) {
             scene.camera.setAngle(camera_theta, camera_phi);
 
             std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
+
+            // Position camera billboard sprite
+            glm::vec3 right = scene.camera.rightVector();
+            glm::vec3 up = scene.camera.upVector(right);
+            //// Bottom Right
+            p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+            //// Top Left
+            p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+            //// Bottom Left
+            p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+            scene.camera.sprite_top->v0 = p1;
+            scene.camera.sprite_top->v1 = p2;
+            scene.camera.sprite_top->v2 = p3;
+
+            //// Bottom Right
+            p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+            //// Top Right
+            p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+            //// Top Left
+            p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+            scene.camera.sprite_bottom->v0 = p1;
+            scene.camera.sprite_bottom->v1 = p2;
+            scene.camera.sprite_bottom->v2 = p3;
 
             scene.camera.setPreview(rendering_preview);
             if (rendering_preview) {

@@ -8,6 +8,7 @@
 #include "CImg.h"
 
 class Shape;
+class Triangle;
 class Intersection;
 class Grid;
 
@@ -69,6 +70,9 @@ public:
     float previewPixelHeight;
 
     bool preview;
+
+    Triangle *sprite_top;
+    Triangle *sprite_bottom;
 
     // Constructor
     Camera();
