@@ -133,6 +133,8 @@ glm::vec3 trace(const Ray &r, const std::vector<Shape*>& objects, const std::vec
 
 void fillBuffer(Uint32 *buffer, std::vector<glm::vec3> pixels, int size);
 
+void redOutline(Uint32 *buffer, int width, int height, int thickness);
+
 #include "raytrace.cpp"
 
 #endif

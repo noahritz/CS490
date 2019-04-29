@@ -12,10 +12,10 @@
 #include "raytrace.hpp"
 #include "loader.hpp"
 
-// const int PREVIEW_WIDTH = 128, PREVIEW_HEIGHT = 96;
+// #define DEBUG 1
+
 const int PREVIEW_WIDTH = 160, PREVIEW_HEIGHT = 120;
 const int WIDTH = 640, HEIGHT = 480;
-// const int WIDTH = 1280, HEIGHT = 720;
 
 
 int main(int argc, char *argv[]) {
@@ -251,26 +251,28 @@ int main(int argc, char *argv[]) {
     }
 
     // Create grid
-
-    // float delta = 0.25;
-    // glm::vec3 grid_size = scene_max - scene_min;
-    // float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
-    // Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
-    // for (int i = 0; i < 3; i++) {
-    //     if (grid.dimensions[i] <= 0) {
-    //         grid.dimensions[i] = 1;
-    //     }
-    // }
-
-
     glm::vec3 grid_size{100.0, 100.0, 100.0};
     glm::ivec3 dimensions{5, 2, 5};
     glm::vec3 min{0.0, 0.0, 0.0};
     glm::vec3 max{100.0, 100.0, 100.0};
     Grid grid{grid_size, dimensions, min, max};
+
+    /*  * NOTE: Automated grid creation (below) was producing inefficient
+        * results. User designed grid sizes were more reliable
+        
+    float delta = 0.25;
+    glm::vec3 grid_size = scene_max - scene_min;
+    float grid_conversion = glm::pow((delta * scene.objects.size()) / (grid_size.x * grid_size.y * grid_size.z), 1.0/3.0);
+    Grid grid{grid_size, (glm::ivec3) glm::round(grid_size * grid_conversion), scene_min, scene_max};
+    for (int i = 0; i < 3; i++) {
+        if (grid.dimensions[i] <= 0) {
+            grid.dimensions[i] = 1;
+        }
+    }
+
+    */
     
     // Fill grid with triangles
-
     int xx, yy, zz;
     glm::vec3 obj_min, obj_max;
     glm::ivec3 cell_min, cell_max;
@@ -407,6 +409,19 @@ int main(int argc, char *argv[]) {
                     std::cout << "ERROR: " << SDL_GetError() << std::endl;
                 }
             } else {
+                // Draw red outline while scene is rendering
+                redOutline(previewPixels, scene.camera.PREVIEW_WIDTH, scene.camera.PREVIEW_HEIGHT, 1);
+                if (SDL_UpdateTexture(previewTexture, NULL, previewPixels, PREVIEW_WIDTH * sizeof(Uint32)) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_RenderClear(renderer);
+                if (SDL_RenderCopy(renderer, previewTexture, NULL, NULL) < 0) {
+                    std::cout << "ERROR: " << SDL_GetError() << std::endl;
+                }
+                SDL_RenderPresent(renderer);
+
+                // Render detailed scene
                 scene.AA = AA;
                 render(pixels, scene, grid);
                 if (SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(Uint32)) < 0) {
