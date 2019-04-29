@@ -56,13 +56,16 @@ int main(int argc, char *argv[]) {
     f.seekg(0, f.beg);
     f.read(buff, file_length);
     buff[file_length] = '\0';
+    #ifdef DEBUG
     std::cout << "Reading scene.json with length " << file_length << std::endl;
+    #endif
 
     rapidjson::Document d;
     d.Parse(buff);
     assert(d.IsObject());
 
     /* Create scene */
+    std::string password = d["password"].GetString();
 
     int num_objects = d["objects"]["spheres"].Size() + d["objects"]["triangles"].Size() + (d["objects"]["texturedRectangles"].Size()*2);
     int num_lights = d["lights"].Size();
@@ -308,8 +311,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Test Uniform Grid Creation
+    #ifdef DEBUG
     printf("Created %ix%ix%i uniform grid\n", grid.dimensions.x, grid.dimensions.y, grid.dimensions.z);
     std::cout << objs_placed << " objects placed into grid" << std::endl;
+    #endif
 
     // Anti-Aliasing
     scene.AA = d["AA"].GetInt();
@@ -352,7 +357,6 @@ int main(int argc, char *argv[]) {
     while (!quit) {
         // Render picture if move has changed
         if (rendering) {
-            std::cout << "Rendering" << std::endl;
 
 
             // Move camera
@@ -362,7 +366,10 @@ int main(int argc, char *argv[]) {
             camera_phi = glm::clamp(camera_phi, min_phi, max_phi);
             scene.camera.setAngle(camera_theta, camera_phi);
 
+            #ifdef DEBUG
+            std::cout << "Rendering" << std::endl;
             std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
+            #endif
 
             // Position camera billboard sprite
             glm::vec3 right = scene.camera.rightVector();
@@ -472,6 +479,50 @@ int main(int argc, char *argv[]) {
                         case SDLK_SPACE:
                             rendering = true;
                             rendering_preview = false;
+                            break;
+                        case SDLK_RETURN:
+                            std::cout << "ENTER PASSWORD (ENTER to Confirm, ESC to Cancel): ";
+                            char c;
+                            std::string attempt;
+                            SDL_StartTextInput();
+                            SDL_Event text_event;
+                            bool done = false;
+                            while (!done) {
+                                if (SDL_PollEvent(&text_event)) {
+                                    switch (text_event.type) {
+                                        case SDL_TEXTINPUT:
+                                            std::cout << text_event.text.text;
+                                            attempt += text_event.text.text;
+                                            break;
+                                        case SDL_KEYDOWN:
+                                            switch (text_event.key.keysym.sym) {
+                                                case SDLK_ESCAPE:
+                                                    std::cout << std::endl;
+                                                    done = true;
+                                                    break;
+                                                case SDLK_RETURN:
+                                                    if (attempt == password) {
+                                                        std::cout << std::endl << "CORRECT" << std::endl;
+                                                        quit = true;
+                                                    } else {
+                                                        std::cout << std::endl << "INCORRECT" << std::endl;
+                                                    }
+                                                    done = true;
+                                                    break;
+                                                case SDLK_BACKSPACE:
+                                                    if (attempt.length() > 0) {
+                                                        attempt.pop_back();
+                                                        std::cout << '\b' << ' ' << '\b';
+                                                    }
+                                                    break;
+                                            }
+                                            break;
+                                    }
+                                }
+                            }
+
+                            SDL_StopTextInput();
+                            break;
                     }
                     break;
                 case SDL_QUIT:

@@ -23,6 +23,7 @@ OBJ_NAME = test
 
 main: main.cpp
 	export OMP_NUM_THREADS=4
+	export DEBUG=1
 	$(CXX) $(CXXFLAGS) -o $(OBJ_NAME) $(OBJS) $(SDLFLAGS) $(GLMFLAGS) $(CIMGFLAGS) $(RJFLAGS)
 
 # 	$(CXX) $(CXXFLAGS) $(SDLFLAGS) -o $(OBJ_NAME) $(OBJS)		Why doesn't this work?

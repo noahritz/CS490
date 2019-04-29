@@ -1,5 +1,6 @@
 {
     "AA": 1,
+    "password": "test",
     "camera": {
         "x": 50.0,
         "y": 4.0,

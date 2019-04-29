@@ -258,9 +258,10 @@ void hexToVec(glm::vec3 &v, const Uint32 &h) {
 }
 
 void render(Uint32 *buffer, Scene &scene, Grid& grid) {
+    #ifdef DEBUG
     std::cout << "Rendering" << (scene.camera.preview ? " preview" : "") << std::endl;
-
     std::cout << "Camera has width " << scene.camera.WIDTH << " and height " << scene.camera.HEIGHT << std::endl;
+    #endif
 
     // Create vector of rgb pixels
     std::vector<vec3> pixels(scene.camera.WIDTH*scene.camera.HEIGHT);
@@ -326,7 +327,9 @@ void render(Uint32 *buffer, Scene &scene, Grid& grid) {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+    #ifdef DEBUG
     std::cout << "Execution time: " << (double) duration.count() / 1000000.0 << " seconds" << std::endl;
+    #endif
 }
 
 vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& lights, Grid& grid) {
