@@ -11,15 +11,14 @@ using cimg_library::CImg;
 
 Shape::Shape() : color(glm::vec3{1.0, 1.0, 1.0}), model(false) {}
 Shape::Shape(glm::vec3 col) : color(col), lambert(1.0), specular(0.0), model(false) {}
-Shape::Shape(glm::vec3 col, float lam, float spec) : color(col), lambert(lam), specular(spec), model(false) {}
+Shape::Shape(glm::vec3 col, float lam, float spec, bool refr, float ior) : color(col), lambert(lam), specular(spec), refractive(refr), IoR(ior), model(false) {}
 Shape::~Shape() {}
 
 glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const {
-    glm::vec3 _color, lambert_color, specular_color;
-    lambert_color = specular_color = glm::vec3{0.0, 0.0, 0.0};
 
     glm::vec3 norm = this->normal(point, ray);
 
+    glm::vec3 lambert_color{0.0, 0.0, 0.0};
     if (lambert) {
         for (auto &l : lights) {
 
@@ -34,6 +33,27 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
         lambert_color *= this->color; // scale it by the object's color
     }
 
+    glm::vec3 refracted_color{0.0, 0.0, 0.0};
+    if (refractive) {
+
+        float otherIoR = IoR;
+        glm::vec3 refr_norm = norm;
+        if (ray.IoR == IoR) {
+            otherIoR = 1.0;
+            refr_norm *= -1;
+        }
+
+        glm::vec3 refracted_vec = glm::normalize(glm::refract(ray.vector, refr_norm, ray.IoR/otherIoR));
+
+        Ray refracted_ray{point + (refracted_vec * 0.01f), refracted_vec};
+        refracted_ray.IoR = otherIoR;
+        
+        glm::vec3 refracted_color = trace(refracted_ray, objects, lights, grid);
+
+        return (this->color * refracted_color);
+    }
+
+    glm::vec3 specular_color{0.0, 0.0, 0.0};
     if (specular) {
         glm::vec3 reflected_vec = glm::reflect(ray.vector, norm);
         Ray reflected_ray{point + (reflected_vec * 0.01f), reflected_vec};
@@ -42,9 +62,7 @@ glm::vec3 Shape::surface(const Ray& ray, const glm::vec3& point, const std::vect
         specular_color = trace(reflected_ray, objects, lights, grid);
     }
 
-    _color = (lambert_color * lambert) + (specular_color * specular);
-
-    return _color;
+    return (lambert_color * lambert) + (specular_color * specular);
 }
 
 
@@ -57,7 +75,7 @@ Sphere::Sphere(glm::vec3 ctr, float r) : center{ctr}, radius{r} {}
 Sphere::Sphere(glm::vec3 ctr, float r, glm::vec3 col) : Shape(col), center{ctr}, radius{r} {}
 
 // Constructor for a sphere of specified color and material
-Sphere::Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec) : Shape(col, lam, spec), center{ctr}, radius{r} {}
+Sphere::Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec, bool refr, float ior) : Shape(col, lam, spec, refr, ior), center{ctr}, radius{r} {}
 
 // from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
 bool Sphere::solveQuadratic (const float &a, const float &b, const float &c, float &x0, float &x1) const {
@@ -126,8 +144,8 @@ Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) :
     v0(p0), v1(p1), v2(p2) {}
 Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col) :
     Shape(col), v0(p0), v1(p1), v2(p2) {}
-Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col, float lam, float spec) :
-    Shape(col, lam, spec), v0(p0), v1(p1), v2(p2) {}
+Triangle::Triangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 col, float lam, float spec, bool refr, float ior) :
+    Shape(col, lam, spec, refr, ior), v0(p0), v1(p1), v2(p2) {}
 
 // From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 bool Triangle::intersect(const Ray& ray, float &t) {
@@ -227,8 +245,8 @@ glm::vec3 Model::max() const {
 }
 
 /* TEXTURED RECTANGLE */
-TexturedTriangle::TexturedTriangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, float lam, float spec, CImg<float>& tex, bool bot) :
-    Triangle(p0, p1, p2, glm::vec3{1.0, 1.0, 1.0}, lam, spec), texture(tex), bottom(bot) {
+TexturedTriangle::TexturedTriangle(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, float lam, float spec, bool refr, float ior, CImg<float>& tex, bool bot) :
+    Triangle(p0, p1, p2, glm::vec3{1.0, 1.0, 1.0}, lam, spec, refr, ior), texture(tex), bottom(bot) {
 }
 
 bool TexturedTriangle::intersect(const Ray& ray, float &t) {

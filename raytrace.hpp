@@ -21,6 +21,7 @@ public:
     glm::vec3 origin;
     glm::vec3 vector;
     glm::vec3 invdir;
+    float IoR;
     int depth;
 
     Intersection intersectObjects(const std::vector<Shape*>& objects) const;

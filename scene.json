@@ -40,12 +40,22 @@
                 "g": 1.0,
                 "b": 1.0,
                 "material": 0
+            },
+            {
+                "x": 50,
+                "y": 3,
+                "z": 80,
+                "radius": 3,
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
+                "material": 2
             }
 
         ],
         "models": [
             {
-                "filename": "models/tetrahedron.obj",
+                "filename": "models/sphere.obj",
                 "scale": 4.0,
                 "x": 30.0,
                 "y": 5.0,
@@ -53,7 +63,7 @@
                 "r": 1.0,
                 "g": 1.0,
                 "b": 1.0,
-                "material": 1
+                "material": 0
             }
         ],
         "texturedRectangles": [
@@ -80,30 +90,6 @@
                 },
                 "texture": 0,
                 "material": 0
-            },
-            {
-                "topleft": {
-                    "x": 48,
-                    "y": 5,
-                    "z": 50
-                },
-                "topright": {
-                    "x": 52,
-                    "y": 5,
-                    "z": 50
-                },
-                "bottomleft": {
-                    "x": 48,
-                    "y": 0,
-                    "z": 50
-                },
-                "bottomright": {
-                    "x": 52,
-                    "y": 0,
-                    "z": 50
-                },
-                "texture": 0,
-                "material": 0
             }
         ],
         "triangles": [
@@ -126,7 +112,7 @@
                 "r": 0.2,
                 "g": 0.2,
                 "b": 0.2,
-                "material": 0
+                "material": 1
             },
             {
                 "v1": {
@@ -147,7 +133,7 @@
                 "r": 0.2,
                 "g": 0.2,
                 "b": 0.2,
-                "material": 0
+                "material": 1
             },
             {
                 "v1": {
@@ -364,7 +350,7 @@
     "lights": [
         {
             "x": 50.0,
-            "y": 10.0,
+            "y": 5.0,
             "z": 99.0,
             "r": 1.0,
             "g": 1.0,
@@ -373,16 +359,27 @@
     ],
     "textures": [
         "textures/face.bmp",
-        "textures/star.bmp"
+        "textures/star.bmp",
+        "textures/R.bmp"
     ],
     "materials": [
         {
+            "refractive": false,
+            "IoR": 1.0,
             "lambert": 1.0,
             "specular": 0.0
         },
         {
+            "refractive": false,
+            "IoR": 1.0,
             "lambert": 0.02,
             "specular": 0.98
+        },
+        {
+            "refractive": true,
+            "IoR": 1.52,
+            "lambert": 1.0,
+            "specular": 0.05
         }
     ]
 }

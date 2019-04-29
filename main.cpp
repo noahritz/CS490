@@ -109,7 +109,9 @@ int main(int argc, char *argv[]) {
         Sphere *sph = new Sphere{   ctr, rad,
                                     vec3{s["r"].GetFloat(), s["g"].GetFloat(), s["b"].GetFloat()},
                                     d["materials"][s["material"].GetInt()]["lambert"].GetFloat(),
-                                    d["materials"][s["material"].GetInt()]["specular"].GetFloat()};
+                                    d["materials"][s["material"].GetInt()]["specular"].GetFloat(),
+                                    d["materials"][s["material"].GetInt()]["refractive"].GetBool(),
+                                    d["materials"][s["material"].GetInt()]["IoR"].GetFloat()};
         scene.objects[i++] = sph;
 
         scene_min.x = std::min(ctr.x - rad, scene_min.x);
@@ -131,7 +133,9 @@ int main(int argc, char *argv[]) {
         Triangle *tri = new Triangle{   p1, p2, p3,
                                         vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()},
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
-                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat()};
+                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
+                                        d["materials"][t["material"].GetInt()]["IoR"].GetFloat()};
         scene.objects[i++] = tri;
 
         scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
@@ -156,6 +160,8 @@ int main(int argc, char *argv[]) {
         Triangle *tri1 = new TexturedTriangle{   p1, p2, p3,
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
+                                        d["materials"][t["material"].GetInt()]["IoR"].GetFloat(),
                                         scene.textures[t["texture"].GetInt()], true};
         scene.objects[i++] = tri1;
 
@@ -173,6 +179,8 @@ int main(int argc, char *argv[]) {
         Triangle *tri2 = new TexturedTriangle{   p1, p2, p3,
                                         d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
                                         d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
+                                        d["materials"][t["material"].GetInt()]["IoR"].GetFloat(),
                                         scene.textures[t["texture"].GetInt()], false};
         scene.objects[i++] = tri2;
 
@@ -194,7 +202,10 @@ int main(int argc, char *argv[]) {
                 model_location,
                 model_color,
                 d["materials"][m["material"].GetInt()]["lambert"].GetFloat(),
-                d["materials"][m["material"].GetInt()]["specular"].GetFloat());
+                d["materials"][m["material"].GetInt()]["specular"].GetFloat(),
+                d["materials"][m["material"].GetInt()]["refractive"].GetBool(),
+                d["materials"][m["material"].GetInt()]["IoR"].GetFloat());
+
     }
 
     // Get scene lights from json document

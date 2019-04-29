@@ -7,7 +7,7 @@ using std::ifstream;
 using std::string;
 using std::stringstream;
 
-void load(std::vector<Shape *>& objects, std::string filename, float scale, glm::vec3 location, glm::vec3 color, float lambert, float specular) {
+void load(std::vector<Shape *>& objects, std::string filename, float scale, glm::vec3 location, glm::vec3 color, float lambert, float specular, bool refr, float ior) {
     string line;
     string type;
     string v1, v2, v3;
@@ -39,7 +39,7 @@ void load(std::vector<Shape *>& objects, std::string filename, float scale, glm:
             ind1--;
             ind2--;
             ind3--;
-            Triangle *tri = new Triangle{vertices[ind1], vertices[ind2], vertices[ind3], color, lambert, specular};
+            Triangle *tri = new Triangle{vertices[ind1], vertices[ind2], vertices[ind3], color, lambert, specular, refr, ior};
             model->triangles.push_back(tri);
             // objects.push_back(tri);
         } else {

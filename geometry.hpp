@@ -12,13 +12,15 @@ public:
     glm::vec3 color;
     float lambert;
     float specular;
+    bool refractive;
+    float IoR;
 
     bool model;
     Intersection intersected_tri[4];
 
     Shape();
     Shape(glm::vec3 color);
-    Shape(glm::vec3 color, float lam, float spec);
+    Shape(glm::vec3 color, float lam, float spec, bool refr, float ior);
     virtual ~Shape();
 
     virtual bool intersect(const Ray& ray, float &t) = 0;
@@ -39,7 +41,7 @@ public:
 
     Sphere(glm::vec3 ctr, float r);
     Sphere(glm::vec3 ctr, float r, glm::vec3 col);
-    Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec);
+    Sphere(glm::vec3 ctr, float r, glm::vec3 col, float lam, float spec, bool refr, float ior);
 
     bool intersect(const Ray& ray, float &t);
     glm::vec3 normal(const glm::vec3& point, const Ray& ray) const;
@@ -61,7 +63,7 @@ public:
 
     Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3);
     Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 col);
-    Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 col, float lam, float spec);
+    Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 col, float lam, float spec, bool refr, float ior);
 
     bool intersect(const Ray& ray, float &t);
     glm::vec3 normal(const glm::vec3& point, const Ray& ray) const;
@@ -77,7 +79,7 @@ public:
     glm::vec3 UV[4];
     cimg_library::CImg<float>& texture;
 
-    TexturedTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float lam, float spec, cimg_library::CImg<float>& tex, bool bot);
+    TexturedTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float lam, float spec, bool refr, float ior, cimg_library::CImg<float>& tex, bool bot);
 
     bool intersect(const Ray& ray, float &t) override;
     glm::vec3 surface(const Ray& ray, const glm::vec3& point, const std::vector<Shape*>& objects, const std::vector<Light*> &lights, Grid &grid) const override;

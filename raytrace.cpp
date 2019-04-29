@@ -16,12 +16,12 @@ using std::vector;
 
 /* RAY CLASS */
 // Default Ray constructor
-Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0}, depth(0) {
+Ray::Ray() : origin{0.0, 0.0, 0.0}, vector{0.0, 0.0, 0.0}, depth(0), IoR(1.0) {
     invdir = 1.0f/vector;
 };
 
 // Ray constructor taking an origin and direction vector
-Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0) {
+Ray::Ray(const glm::vec3 o, const glm::vec3 v) : origin{o}, vector{v}, depth(0), IoR(1.0) {
     invdir = 1.0f/vector; 
 };
 
