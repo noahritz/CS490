@@ -1,0 +1,377 @@
+{
+    "AA": 1,
+    "password": "WAM",
+    "grid": {
+        "x": 5,
+        "y": 2,
+        "z": 5
+    },
+    "camera": {
+        "x": 50.0,
+        "y": 4.0,
+        "z": 95.0,
+        "toX": 0.0,
+        "toY": 0.0,
+        "toZ": -1.0,
+        "fov": 40.0,
+        "sprite": false
+    },
+    "objects": {
+        "spheres": [
+            {
+                "x": 10,
+                "y": 4,
+                "z": 50,
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "radius": 2.9,
+                "material": 2
+            },
+            {
+                "x": 50,
+                "y": 4,
+                "z": 50,
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "radius": 2.9,
+                "material": 3
+            },
+            {
+                "x": 90,
+                "y": 4,
+                "z": 50,
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "radius": 2.9,
+                "material": 4
+            }
+        ],
+        "models": [
+            {
+                "filename": "models/hole_in_wall.obj",
+                "x": 10,
+                "y": 0,
+                "z": 50,
+                "r": 1,
+                "g": 0.75,
+                "b": 0.75,
+                "scale": 20,
+                "material": 0
+            },
+            {
+                "filename": "models/hole_in_wall.obj",
+                "x": 50,
+                "y": 0,
+                "z": 50,
+                "r": 0.75,
+                "g": 1,
+                "b": 0.75,
+                "scale": 20,
+                "material": 0
+            },
+            {
+                "filename": "models/hole_in_wall.obj",
+                "x": 90,
+                "y": 0,
+                "z": 50,
+                "r": 0.75,
+                "g": 0.75,
+                "b": 1,
+                "scale": 20,
+                "material": 0
+            }
+        ],
+        "texturedRectangles": [
+        ],
+        "rectangles": [
+            {
+                "topleft": {
+                    "x": 20,
+                    "y": 20,
+                    "z": 50
+                },
+                "topright": {
+                    "x": 40,
+                    "y": 20,
+                    "z": 50
+                },
+                "bottomleft": {
+                    "x": 20,
+                    "y": 0,
+                    "z": 50
+                },
+                "bottomright": {
+                    "x": 40,
+                    "y": 0,
+                    "z": 50
+                },
+                "r": 0.5,
+                "g": 1,
+                "b": 1,
+                "material": 0
+            },
+            {
+                "topleft": {
+                    "x": 60,
+                    "y": 20,
+                    "z": 50
+                },
+                "topright": {
+                    "x": 80,
+                    "y": 20,
+                    "z": 50
+                },
+                "bottomleft": {
+                    "x": 60,
+                    "y": 0,
+                    "z": 50
+                },
+                "bottomright": {
+                    "x": 80,
+                    "y": 0,
+                    "z": 50
+                },
+                "r": 1,
+                "g": 1,
+                "b": 0.5,
+                "material": 0
+            },
+            {
+                "name": "back",
+                "topleft": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 0
+                },
+                "topright": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 0
+                },
+                "bottomleft": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "bottomright": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 0
+                },
+                "r": 0.75,
+                "g": 0.5,
+                "b": 1.0,
+                "material": 0
+            },
+            {
+                "name": "front",
+                "topleft": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 100
+                },
+                "topright": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 100
+                },
+                "bottomleft": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 100
+                },
+                "bottomright": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 100
+                },
+                "r": 0.75,
+                "g": 0.5,
+                "b": 1.0,
+                "material": 0
+            },
+            {
+                "name": "left",
+                "topleft": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 100
+                },
+                "topright": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 0
+                },
+                "bottomleft": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 100
+                },
+                "bottomright": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "r": 0.75,
+                "g": 0.5,
+                "b": 1.0,
+                "material": 0
+            },
+            {
+                "name": "right",
+                "topleft": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 0
+                },
+                "topright": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 100
+                },
+                "bottomleft": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 0
+                },
+                "bottomright": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 100
+                },
+                "r": 0.75,
+                "g": 0.5,
+                "b": 1.0,
+                "material": 0
+            },
+            {
+                "name": "top",
+                "topleft": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 100
+                },
+                "topright": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 100
+                },
+                "bottomleft": {
+                    "x": 0,
+                    "y": 20,
+                    "z": 0
+                },
+                "bottomright": {
+                    "x": 100,
+                    "y": 20,
+                    "z": 0
+                },
+                "r": 0.5,
+                "g": 1.0,
+                "b": 0.75,
+                "material": 0
+            },
+            {
+                "name": "bottom",
+                "topleft": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "topright": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 0
+                },
+                "bottomleft": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 100
+                },
+                "bottomright": {
+                    "x": 100,
+                    "y": 0,
+                    "z": 100
+                },
+                "r": 1.0,
+                "g": 0.5,
+                "b": 0.75,
+                "material": 0
+            }
+        ],
+        "triangles": [
+        ]
+    },
+    "lights": [
+        {
+            "x": 50.0,
+            "y": 19.9,
+            "z": 5.0,
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0
+        },
+        {
+            "x": 50.0,
+            "y": 0.01,
+            "z": 5.0,
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0
+        },
+        {
+            "x": 50.0,
+            "y": 19.9,
+            "z": 95.0,
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0
+        },
+        {
+            "x": 50.0,
+            "y": 0.01,
+            "z": 95.0,
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0
+        }
+    ],
+    "textures": [
+        "1/wam.bmp"
+    ],
+    "materials": [
+        {
+            "refractive": false,
+            "IoR": 1.0,
+            "lambert": 1.0,
+            "specular": 0.0
+        },
+        {
+            "refractive": false,
+            "IoR": 1.0,
+            "lambert": 0.02,
+            "specular": 0.98
+        },
+        {
+            "refractive": true,
+            "IoR": 1.52,
+            "lambert": 1.0,
+            "specular": 0.05
+        },
+        {
+            "refractive": true,
+            "IoR": 1.32,
+            "lambert": 1.0,
+            "specular": 0.05
+        },
+        {
+            "refractive": true,
+            "IoR": 1.06,
+            "lambert": 1.0,
+            "specular": 0.05
+        }
+    ]
+}

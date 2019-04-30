@@ -39,10 +39,21 @@ int main(int argc, char *argv[]) {
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
     SDL_Texture *previewTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
+    std::cout << "Controls:" << std::endl;
+    std::cout << "Movement:\t\t\tWASD" << std::endl;
+    std::cout << "Look Around:\t\t\tArrow Keys" << std::endl;
+    std::cout << "Render Hi-Resolution:\t\tSPACE" << std::endl;
+    std::cout << "Enter Password:\t\t\tENTER" << std::endl;
+
     // Read scene file from json
     int file_length = 0;
     char *buff;
-    std::ifstream f("scene.json", std::ifstream::binary | std::ios::ate); // Read file from end
+    std::ifstream f;
+    if (argc > 1) {
+        f = std::ifstream(strcat(argv[1], "/scene.json"), std::ifstream::binary | std::ios::ate); // Read file from end
+    } else {
+        f = std::ifstream("scene.json", std::ifstream::binary | std::ios::ate); // Read file from end
+    }
 
     if (!f) {
         std::cout << "Failed to read scene.json" << std::endl;
@@ -67,7 +78,7 @@ int main(int argc, char *argv[]) {
     /* Create scene */
     std::string password = d["password"].GetString();
 
-    int num_objects = d["objects"]["spheres"].Size() + d["objects"]["triangles"].Size() + (d["objects"]["texturedRectangles"].Size()*2);
+    int num_objects = d["objects"]["spheres"].Size() + d["objects"]["triangles"].Size() + (d["objects"]["rectangles"].Size()*2) + (d["objects"]["texturedRectangles"].Size()*2);
     int num_lights = d["lights"].Size();
     int fov = d["camera"]["fov"].GetFloat();
     Scene scene{WIDTH, HEIGHT, fov, num_objects, num_lights};
@@ -79,6 +90,8 @@ int main(int argc, char *argv[]) {
     scene.camera.FULL_HEIGHT = HEIGHT;
     scene.camera.PREVIEW_WIDTH = PREVIEW_WIDTH;
     scene.camera.PREVIEW_HEIGHT = PREVIEW_HEIGHT;
+
+    scene.camera.using_sprite = d["camera"]["sprite"].GetBool();
 
     // Create a camera facing forward
     scene.camera.fullHalfWidth = glm::tan((scene.camera.fov / 2) * (M_PI / 180)); // A misnomer, but whatever
@@ -140,6 +153,47 @@ int main(int argc, char *argv[]) {
                                         d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
                                         d["materials"][t["material"].GetInt()]["IoR"].GetFloat()};
         scene.objects[i++] = tri;
+
+        scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
+        scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
+        scene_min.z = std::min({p1.z, p2.z, p3.z, scene_min.z});
+        scene_max.x = std::max({p1.x, p2.x, p3.x, scene_max.x});
+        scene_max.y = std::max({p1.y, p2.y, p3.y, scene_max.y});
+        scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
+    }
+
+    // Create rectangles (an easier way to place geometry)
+    for (auto &t : d["objects"]["rectangles"].GetArray()) {
+        // Create Triangle 1
+        p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
+        p2 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
+        p3 = vec3{t["bottomleft"]["x"].GetFloat(), t["bottomleft"]["y"].GetFloat(), t["bottomleft"]["z"].GetFloat()};
+        Triangle *tri1 = new Triangle{   p1, p2, p3,
+                                        vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()},
+                                        d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
+                                        d["materials"][t["material"].GetInt()]["IoR"].GetFloat()};
+        scene.objects[i++] = tri1;
+
+        scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
+        scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
+        scene_min.z = std::min({p1.z, p2.z, p3.z, scene_min.z});
+        scene_max.x = std::max({p1.x, p2.x, p3.x, scene_max.x});
+        scene_max.y = std::max({p1.y, p2.y, p3.y, scene_max.y});
+        scene_max.z = std::max({p1.z, p2.z, p3.z, scene_max.z});
+
+        // Create Triangle 2
+        p1 = vec3{t["bottomright"]["x"].GetFloat(), t["bottomright"]["y"].GetFloat(), t["bottomright"]["z"].GetFloat()};
+        p2 = vec3{t["topright"]["x"].GetFloat(), t["topright"]["y"].GetFloat(), t["topright"]["z"].GetFloat()};
+        p3 = vec3{t["topleft"]["x"].GetFloat(), t["topleft"]["y"].GetFloat(), t["topleft"]["z"].GetFloat()};
+        Triangle *tri2 = new Triangle{   p1, p2, p3,
+                                        vec3{t["r"].GetFloat(), t["g"].GetFloat(), t["b"].GetFloat()},
+                                        d["materials"][t["material"].GetInt()]["lambert"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["specular"].GetFloat(),
+                                        d["materials"][t["material"].GetInt()]["refractive"].GetBool(),
+                                        d["materials"][t["material"].GetInt()]["IoR"].GetFloat()};
+        scene.objects[i++] = tri2;
 
         scene_min.x = std::min({p1.x, p2.x, p3.x, scene_min.x});
         scene_min.y = std::min({p1.y, p2.y, p3.y, scene_min.y});
@@ -216,31 +270,33 @@ int main(int argc, char *argv[]) {
     }
 
     // Create camera sprite billboard
-    // Create Triangle 1
-    glm::vec3 right = scene.camera.rightVector();
-    glm::vec3 up = scene.camera.upVector(right);
-    //// Bottom Right
-    p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
-    //// Top Left
-    p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
-    //// Bottom Left
-    p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
-    TexturedTriangle *tri1 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], true};
-    scene.objects.push_back(tri1);
+    if (scene.camera.using_sprite) {
+        // Create Triangle 1
+        glm::vec3 right = scene.camera.rightVector();
+        glm::vec3 up = scene.camera.upVector(right);
+        //// Bottom Right
+        p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+        //// Top Left
+        p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+        //// Bottom Left
+        p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+        TexturedTriangle *tri1 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], true};
+        scene.objects.push_back(tri1);
 
-    // Create Triangle 2
-    //// Bottom Right
-    p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
-    //// Top Right
-    p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
-    //// Top Left
-    p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
-    TexturedTriangle *tri2 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], false};
+        // Create Triangle 2
+        //// Bottom Right
+        p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.1f * scene.camera.dir);
+        //// Top Right
+        p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+        //// Top Left
+        p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.1f * scene.camera.dir);
+        TexturedTriangle *tri2 = new TexturedTriangle{p1, p2, p3, 1.0, 0.0, false, 1.0, scene.textures[scene.textures.size() - 1], false};
 
-    scene.objects.push_back(tri2);
+        scene.objects.push_back(tri2);
 
-    scene.camera.sprite_top = tri1;
-    scene.camera.sprite_bottom = tri2;
+        scene.camera.sprite_top = tri1;
+        scene.camera.sprite_bottom = tri2;
+    }
 
     // Get scene lights from json document
     i = 0;
@@ -252,7 +308,8 @@ int main(int argc, char *argv[]) {
 
     // Create grid
     glm::vec3 grid_size{100.0, 100.0, 100.0};
-    glm::ivec3 dimensions{5, 2, 5};
+    glm::ivec3 dimensions{d["grid"]["x"].GetInt(), d["grid"]["y"].GetInt(), d["grid"]["z"].GetInt()};
+    // glm::ivec3 dimensions{5, 2, 5};
     glm::vec3 min{0.0, 0.0, 0.0};
     glm::vec3 max{100.0, 100.0, 100.0};
     Grid grid{grid_size, dimensions, min, max};
@@ -373,28 +430,31 @@ int main(int argc, char *argv[]) {
             std::cout << "theta: " << camera_theta * 180.0 / M_PI << ", phi: " << camera_phi * 180.0 / M_PI << std::endl;
             #endif
 
-            // Position camera billboard sprite
-            glm::vec3 right = scene.camera.rightVector();
-            glm::vec3 up = scene.camera.upVector(right);
-            //// Bottom Right
-            p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
-            //// Top Left
-            p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
-            //// Bottom Left
-            p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
-            scene.camera.sprite_top->v0 = p1;
-            scene.camera.sprite_top->v1 = p2;
-            scene.camera.sprite_top->v2 = p3;
+            if (scene.camera.using_sprite) {
+                // Position camera billboard sprite
+                glm::vec3 right = scene.camera.rightVector();
+                glm::vec3 up = scene.camera.upVector(right);
 
-            //// Bottom Right
-            p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
-            //// Top Right
-            p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
-            //// Top Left
-            p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
-            scene.camera.sprite_bottom->v0 = p1;
-            scene.camera.sprite_bottom->v1 = p2;
-            scene.camera.sprite_bottom->v2 = p3;
+                //// Bottom Right
+                p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+                //// Top Left
+                p2 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+                //// Bottom Left
+                p3 = scene.camera.origin - (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+                scene.camera.sprite_top->v0 = p1;
+                scene.camera.sprite_top->v1 = p2;
+                scene.camera.sprite_top->v2 = p3;
+
+                //// Bottom Right
+                p1 = scene.camera.origin + (2.0f*right) + (2.0f*up) - (0.01f * scene.camera.dir);
+                //// Top Right
+                p2 = scene.camera.origin + (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+                //// Top Left
+                p3 = scene.camera.origin - (2.0f*right) - (2.0f*up) - (0.01f * scene.camera.dir);
+                scene.camera.sprite_bottom->v0 = p1;
+                scene.camera.sprite_bottom->v1 = p2;
+                scene.camera.sprite_bottom->v2 = p3;
+            }
 
             scene.camera.setPreview(rendering_preview);
             if (rendering_preview) {
@@ -480,7 +540,7 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_LEFT:
-                            camera_theta -= M_PI/8.0;
+                            camera_theta -= M_PI/16.0;
                             rendering = true;
                             break;
                         case SDLK_DOWN:
@@ -488,7 +548,7 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_RIGHT:
-                            camera_theta += M_PI/8.0;
+                            camera_theta += M_PI/16.0;
                             rendering = true;
                             break;
                         case SDLK_SPACE:

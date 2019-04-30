@@ -71,6 +71,7 @@ public:
 
     bool preview;
 
+    bool using_sprite;
     Triangle *sprite_top;
     Triangle *sprite_bottom;
 

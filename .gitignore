@@ -2,6 +2,7 @@
 *.exe
 # Ignore VSCode settings
 .vscode
+# Ignore assets
 scene_orig.json
 models
 textures
