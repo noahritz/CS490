@@ -19,7 +19,7 @@ RJFLAGS = -IC:\rapidjson\include
 
 OBJS = main.cpp
 
-OBJ_NAME = test
+OBJ_NAME = game
 
 main: main.cpp
 	export OMP_NUM_THREADS=4

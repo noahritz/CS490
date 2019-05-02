@@ -401,8 +401,7 @@ vec3 trace(const Ray &ray, const vector<Shape*>& objects, const vector<Light*>& 
 }
 
 // from https://computergraphics.stackexchange.com/questions/6307/tone-mapping-bright-images
-float hable(float x)
-{
+float hable(float x) {
     float A = 0.15;
     float B = 0.50;
     float C = 0.10;

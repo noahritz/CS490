@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Load Camera sprite texture
-    scene.textures.push_back(cimg_library::CImg<float>("textures/Claptrap.bmp"));
+    scene.textures.push_back(cimg_library::CImg<float>("textures/robot.bmp"));
 
 
     // Create textured rectangles
@@ -526,14 +526,14 @@ int main(int argc, char *argv[]) {
                             rendering = true;
                             break;
                         case SDLK_q:
-                            move += glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
-                            moving_vertical = true;
-                            rendering = true;
+                            // move += glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
+                            // moving_vertical = true;
+                            // rendering = true;
                             break;
                         case SDLK_e:
-                            move -= glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
-                            moving_vertical = true;
-                            rendering = true;
+                            // move -= glm::normalize(scene.camera.upVector(scene.camera.rightVector()));
+                            // moving_vertical = true;
+                            // rendering = true;
                             break;
                         case SDLK_UP:
                             camera_phi -= M_PI/16.0;
@@ -605,6 +605,11 @@ int main(int argc, char *argv[]) {
                     break;
             }
         }
+    }
+
+    // Cleanup
+    for (auto &o : scene.objects) {
+        delete o;
     }
 
     delete[] pixels;
